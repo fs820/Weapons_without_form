@@ -1,0 +1,21 @@
+#####################
+# テクスチャリスト
+#####################
+
+# Number
+Number = data/TEXTURE/number000.png 11.0 1.0 # 数字
+
+# Enemy
+Enemy1 = data/TEXTURE/enemy000.png 1.0 1.0 # 死神
+Enemy2 = data/TEXTURE/enemy001.png 1.0 1.0 # 魔王
+
+# Bullet
+Bullet1 = data/TEXTURE/bullet000.png 1.0 1.0 # 球
+Bullet2 = data/TEXTURE/C.png 1.0 1.0         # C
+
+# 爆発
+EX1 = data/TEXTURE/explosion000.png 8.0 1.0 # 白 [8×1]
+EX2 = data/TEXTURE/explosion001.png 8.0 8.0 # 赤 [8×8]
+
+# 影_Effect
+Shadow_Effect = data/TEXTURE/shadow000.jpg 1.0 1.0 # 影/Effect
