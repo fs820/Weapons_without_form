@@ -161,13 +161,11 @@ void CRenderer::Update(void) const
 //------------------------------
 void CRenderer::Draw(void) const
 {
-	m_pD3DDevice->SetViewport(CManager::GetCamera()->GetViewport());
-
-	m_pD3DDevice->Clear//フロントバッファのクリア
+	m_pD3DDevice->Clear// バックバッファのクリア
 	(
 		0,
 		nullptr,
-		(D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER),
+		D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL,
 		D3DCOLOR_RGBA(0, 0, 0, 0),
 		1.0f,
 		0
@@ -175,15 +173,31 @@ void CRenderer::Draw(void) const
 
 	if (SUCCEEDED(m_pD3DDevice->BeginScene()))//描画開始
 	{
-		CObject::DrawAll(); // オブジェクトの描画
+		for (Index cnt = 0; cnt < CManager::GetCamera()->GetCameraNum(); cnt++)
+		{
+			CManager::GetCamera()->Set(cnt);
+
+			m_pD3DDevice->Clear// ビューポートのバックバッファのクリア
+			(
+				0,
+				nullptr,
+				(D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER),
+				D3DCOLOR_RGBA(0, 0, 0, 0),
+				1.0f,
+				0
+			);
+
+			CObject::DrawAll(); // オブジェクトの描画
+		}
 
 		CManager::GetGui().Draw(); // Gui描画
 
 		CDebugProc::Draw(); // デバック表示
 		m_pD3DDevice->EndScene();//描画終了
+
+		//バックバッファに表示を切り替える
+		m_pD3DDevice->Present(nullptr, nullptr, nullptr, nullptr);
 	}
-	//バックバッファに表示を切り替える
-	m_pD3DDevice->Present(nullptr, nullptr, nullptr, nullptr);
 }
 
 //------------------------------
@@ -193,12 +207,15 @@ void CRenderer::SetRender(void) const
 {
     // レンダーステートの設定
 	m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);			 // カリングの設定
+	m_pD3DDevice->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);     // シェーディングモードをグーローシェードに設定
 	m_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);			 // プレイヤーの中に透明度を加える
 	m_pD3DDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);     // 通常のブレンド
 	m_pD3DDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA); // 通常のブレンド
 	m_pD3DDevice->SetRenderState(D3DRS_ANTIALIASEDLINEENABLE, TRUE);     // 線のアンチエイリアス (ガイド線の安定)
 	m_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);            // ステンシルバッファオフ
 	m_pD3DDevice->SetRenderState(D3DRS_LIGHTING, TRUE);                  // ライト
+
+	SetFog(false); // フォグの設定
 
 	// GPU に合わせた異方性フィルタ設定
 	D3DCAPS9 caps;
@@ -244,6 +261,26 @@ void CRenderer::SetRender(void) const
 	// ステージ 1 以降を無効化
 	m_pD3DDevice->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE); // 基本は1枚
 	m_pD3DDevice->SetTextureStageState(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE); // 基本は1枚
+}
+
+//----------------------------
+// フォグの設定
+//----------------------------
+void CRenderer::SetFog(const bool bFog, D3DFOGMODE mode, D3DCOLOR color, const float start, const float end) const
+{
+	m_pD3DDevice->SetRenderState(D3DRS_FOGENABLE, bFog); // フォグの使用
+
+	if (bFog)
+	{
+		m_pD3DDevice->SetRenderState(D3DRS_FOGCOLOR, color);            // フォグの色
+		m_pD3DDevice->SetRenderState(D3DRS_FOGTABLEMODE, mode);         // フォグの種類
+		m_pD3DDevice->SetRenderState(D3DRS_FOGSTART, BIT_DWORD(start)); // フォグの開始距離
+		m_pD3DDevice->SetRenderState(D3DRS_FOGEND, BIT_DWORD(end));     // フォグの終了距離
+	}
+	else
+	{
+		m_pD3DDevice->SetRenderState(D3DRS_FOGCOLOR, D3DCOLOR_RGBA(0, 0, 0, 0)); // フォグの色をクリア
+	}
 }
 
 //----------------------------

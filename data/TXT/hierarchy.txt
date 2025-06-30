@@ -1,0 +1,66 @@
+###########
+#
+# 階層構造
+#
+###########
+
+#############
+# プレイヤー
+#############
+Player
+    Set
+        Tag = PBody
+        Parent = -1
+        OffSet = 0.0 20.0 0.0
+    End
+    Set
+        Tag = PHead
+        Parent = 0
+        OffSet = 0.0 25.0 0.0
+    End
+    Set
+        Tag = PRArm
+        Parent = 0
+        OffSet = -7.0 20.0 0.0
+    End
+    Set
+        Tag = PRHand
+        Parent = 2
+        OffSet = -7.0 0.0 0.0
+    End
+    Set
+        Tag = PLArm
+        Parent = 0
+        OffSet = 7.0 20.0 0.0
+    End
+    Set
+        Tag = PLHand
+        Parent = 4
+        OffSet = 7.0 0.0 0.0
+    End
+    Set
+        Tag = PRLeg
+        Parent = 0
+        OffSet = -5.0 0.0 0.0
+    End
+    Set
+        Tag = PRFoot
+        Parent = 6
+        OffSet = 0.0 -7.0 0.0
+    End
+    Set
+        Tag = PLLeg
+        Parent = 0
+        OffSet = 5.0 0.0 0.0
+    End
+    Set
+        Tag = PLFoot
+        Parent = 8
+        OffSet = 0.0 -7.0 0.0
+    End
+    Set
+        Tag = PHat
+        Parent = 1
+        OffSet = 0.0 15.0 0.0
+    End
+PlayerEnd

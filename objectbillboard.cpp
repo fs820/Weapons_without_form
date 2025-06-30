@@ -29,7 +29,7 @@ CObjectBillboard* CObjectBillboard::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3D
 		return nullptr;
 	}
 
-	textureIdx = CTextureManager::GetInstance().Register("data\\TEXTURE\\test.png");
+	textureIdx = CTextureManager::GetInstance().Register("data\\TEXTURE\\enemy001.png");
 
 	// ‰Šú‰»
 	if (FAILED(pObjectBillboard->Init(pos, rot, scale, type)))
@@ -54,7 +54,7 @@ CObjectBillboard* CObjectBillboard::Create(Transform transform, TYPE type, int p
 		return nullptr;
 	}
 
-	textureIdx = CTextureManager::GetInstance().Register("data\\TEXTURE\\test.png");
+	textureIdx = CTextureManager::GetInstance().Register("data\\TEXTURE\\enemy001.png");
 
 	// ‰Šú‰»
 	if (FAILED(pObjectBillboard->Init(transform, type)))

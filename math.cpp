@@ -37,12 +37,13 @@ HRESULT CMath:: Rotation(D3DXVECTOR3 resultPos[], const D3DXVECTOR2 size, const 
 //--------------------------------
 float CMath::NormalizeAngle(float angle)
 {
-	while (angle > D3DX_PI)
-	{
+	angle = fmodf(angle, D3DX_PI * 2.0f); // -2ƒÎ‚©‚ç2ƒÎ‚Ì”ÍˆÍ‚Éû‚ß‚é
+	if (angle > D3DX_PI)
+	{// Šp“x‚ªƒÎ‚ğ’´‚¦‚éê‡
 		angle -= D3DX_PI * 2.0f;
 	}
-	while (angle < -D3DX_PI)
-	{
+	else if (angle < -D3DX_PI)
+	{// Šp“x‚ª-ƒÎ‚ğ‰º‰ñ‚éê‡
 		angle += D3DX_PI * 2.0f;
 	}
 	return angle;
@@ -51,16 +52,49 @@ float CMath::NormalizeAngle(float angle)
 //--------------------------------
 // Šp“x‚Ì³‹K‰»
 //--------------------------------
-void CMath::NormalizeAngle(float* pAngle)
+void CMath::NormalizeAngle(float* const pAngle)
 {
-	while (*pAngle > D3DX_PI)
-	{
+	*pAngle = fmodf(*pAngle, D3DX_PI * 2.0f); // -2ƒÎ‚©‚ç2ƒÎ‚Ì”ÍˆÍ‚Éû‚ß‚é
+	if (*pAngle > D3DX_PI)
+	{// Šp“x‚ªƒÎ‚ğ’´‚¦‚éê‡
 		*pAngle -= D3DX_PI * 2.0f;
 	}
-	while (*pAngle < -D3DX_PI)
-	{
+	else if (*pAngle < -D3DX_PI)
+	{// Šp“x‚ª-ƒÎ‚ğ‰º‰ñ‚éê‡
 		*pAngle += D3DX_PI * 2.0f;
 	}
+}
+
+//--------------------------------
+// Šp“x‚Ì³‹K‰»
+//--------------------------------
+D3DXVECTOR3 CMath::NormalizeRot(const D3DXVECTOR3 rot)
+{
+	D3DXVECTOR3 normalizedRot;                                             // ³‹K‰»‚³‚ê‚½Šp“x‚ğŠi”[‚·‚é•Ï”
+	normalizedRot.x = NormalizeAngle(rot.x);                               // x²‚ÌŠp“x‚ğ³‹K‰»
+	normalizedRot.y = NormalizeAngle(rot.y);                               // y²‚ÌŠp“x‚ğ³‹K‰»
+	normalizedRot.z = NormalizeAngle(rot.z);                               // z²‚ÌŠp“x‚ğ³‹K‰»
+	return D3DXVECTOR3(normalizedRot.x, normalizedRot.y, normalizedRot.z); // ³‹K‰»‚³‚ê‚½Šp“x‚ğ•Ô‚·
+}
+
+//--------------------------------
+// Šp“x‚Ì³‹K‰»
+//--------------------------------
+void CMath::NormalizeRot(D3DXVECTOR3* const pRot)
+{
+	NormalizeAngle(&pRot->x); // x²‚ÌŠp“x‚ğ³‹K‰»
+	NormalizeAngle(&pRot->y); // y²‚ÌŠp“x‚ğ³‹K‰»
+	NormalizeAngle(&pRot->z); // z²‚ÌŠp“x‚ğ³‹K‰»
+}
+
+//--------------------------------------
+// –Ú“I‚ÌŠp“x‚Écoefficient‚Å‹ß‚Ã‚¯‚Ä‚¢‚­ (Šp“xˆÀ‘S)
+//--------------------------------------
+void CMath::NormalizeAngleDeltaAndAdd(float* const pAngle, float destAngle, const float coefficient, const float deltaTime)
+{
+	NormalizeAngle(&destAngle);                                         // –Ú“I‚ÌŠp“x‚ğ³‹K‰»
+	float diff = NormalizeAngle(destAngle - *pAngle);                   // Œ»İ‚ÌŠp“x‚Æ–Ú“I‚ÌŠp“x‚Ì·‚ğ³‹K‰»
+	*pAngle = NormalizeAngle(*pAngle + diff * coefficient * deltaTime); // Œ»İ‚ÌŠp“x‚É·‚ğ‰ÁZ‚µ‚Ä³‹K‰»
 }
 
 //---------------------------------

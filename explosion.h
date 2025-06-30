@@ -15,18 +15,18 @@ class CExplosion final : public CObjectBillboard
 {
 	// 公開
 public:
-	using TYPE = enum
+	enum class TYPE : Index
 	{
-		DEFAULT = 0, // デフォルト
-		EXTRA,       // 追加
-		TYPE_MAX     // 最大
+		Defalt, // デフォルト
+		Extra,  // 追加
+		Max     // 最大
 	};
 
 	CExplosion() : m_nAnimationCount{}, m_aniLastTime{}, m_type{} {}
 	CExplosion(int priority) : CObjectBillboard(priority), m_nAnimationCount{}, m_aniLastTime{}, m_type{} {}
 	~CExplosion() = default;
 
-	static HRESULT Load(const string_view sTexturePass[TYPE_MAX]);
+	static HRESULT Load(const string_view sTexturePass[Index(TYPE::Max)]);
 	static void Unload(void);
 	static CExplosion* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority = 3);
 
@@ -39,11 +39,11 @@ public:
 private:
 	void OnCollision(const CObject& other) override {};
 
-	static const D3DXVECTOR2 m_imageBlock[TYPE_MAX]; // テクスチャブロック数
+	static const D3DXVECTOR2 m_imageBlock[Index(TYPE::Max)]; // テクスチャブロック数
 	static const float m_AnimationTime;	             // アニメーションタイム
 
-	static LPDIRECT3DTEXTURE9 m_apTexture[TYPE_MAX]; // 共有テクスチャのポインタ
-	static D3DXVECTOR2 m_aImageSize[TYPE_MAX];       // テクスチャサイズ
+	static LPDIRECT3DTEXTURE9 m_apTexture[Index(TYPE::Max)]; // 共有テクスチャのポインタ
+	static D3DXVECTOR2 m_aImageSize[Index(TYPE::Max)];       // テクスチャサイズ
 
 	int m_nAnimationCount;              // アニメーションカウント
 	float m_aniLastTime;                // アニメーション更新タイム

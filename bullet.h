@@ -15,18 +15,18 @@ class CBullet final : public CObjectBillboard
 {
 // 公開
 public:
-	using TYPE = enum
+	enum class TYPE : Index
 	{
-		PLAYER = 0, // プレイヤー
-		ENEMY,      // エネミー
-		TYPE_MAX    // 最大
+		Player,     // プレイヤー
+		Enemy,      // エネミー
+		Max    // 最大
 	};
 
 	CBullet() : m_fSpeed{}, m_type{}, m_fLife{}, m_EffectTIme{} {}
 	CBullet(int priority) :CObjectBillboard(priority), m_fSpeed {}, m_type{}, m_fLife{}, m_EffectTIme{} {}
 	~CBullet() = default;
 
-	static HRESULT Load(const string_view sTexturePass[TYPE_MAX]);
+	static HRESULT Load(const string_view sTexturePass[Index(TYPE::Max)]);
 	static void Unload(void);
 	static CBullet* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float fSpeed, TYPE type, int priority = 3);
 
@@ -45,8 +45,8 @@ private:
 	static constexpr float LIFE = 20.0f;         // ライフ
 	static constexpr float EFFECT_TIME = 0.01f;  // エフェクト間隔
 
-	static LPDIRECT3DTEXTURE9 m_apTexture[TYPE_MAX]; // 共有テクスチャのポインタ
-	static D3DXVECTOR2 m_aImageSize[TYPE_MAX];       // テクスチャサイズ
+	static LPDIRECT3DTEXTURE9 m_apTexture[Index(TYPE::Max)]; // 共有テクスチャのポインタ
+	static D3DXVECTOR2 m_aImageSize[Index(TYPE::Max)];       // テクスチャサイズ
 
 	float m_fSpeed;                       // 移動速度
 	TYPE m_type;                          // バレットの種類

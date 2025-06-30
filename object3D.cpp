@@ -15,8 +15,6 @@
 //
 //---------------------------------------
 
-size_t CObject3D::m_textureIdx{};           // テクスチャ番号
-
 //------------------------------
 // 生成
 //------------------------------
@@ -28,8 +26,6 @@ CObject3D* CObject3D::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale
 	{// 生成失敗
 		return nullptr;
 	}
-
-	m_textureIdx = CTextureManager::GetInstance().Register("data\\TEXTURE\\test2.jpg");
 
 	// 初期化
 	if (FAILED(pObject3D->Init(pos, rot, scale, type)))
@@ -53,8 +49,6 @@ CObject3D* CObject3D::Create(Transform transform, TYPE type, int priority)
 	{// 生成失敗
 		return nullptr;
 	}
-
-	m_textureIdx = CTextureManager::GetInstance().Register("data\\TEXTURE\\test2.jpg");
 
 	// 初期化
 	if (FAILED(pObject3D->Init(transform, type)))
@@ -83,7 +77,7 @@ HRESULT CObject3D::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYP
 	}
 
 	SetTransform(Transform(pos, rot, scale));
-	SetSize(D3DXVECTOR3(CTextureManager::GetInstance().GetSize(m_textureIdx)));
+	SetSize(D3DXVECTOR3(CTextureManager::GetInstance().GetSize(Index(TEXTAG::Ground))));
 
 	//バッファーの設定
 	if (FAILED(pDevice->CreateVertexBuffer
@@ -271,7 +265,7 @@ void CObject3D::Draw(void)
 	pDevice->SetFVF(FVF_VERTEX);
 
 	//テクスチャの設定
-	pDevice->SetTexture(0, CTextureManager::GetInstance().GetTexture(m_textureIdx));
+	pDevice->SetTexture(0, CTextureManager::GetInstance().GetTexture(Index(TEXTAG::Ground)));
 
 	// ポリゴンの描画
 	pDevice->DrawPrimitive

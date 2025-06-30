@@ -85,8 +85,8 @@ HRESULT CNumber::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, int s
 
 	D3DXVECTOR3 resultPos[VT_DEF] = {};
 
-	D3DXVECTOR2 imageSize = CTextureManager::GetInstance().GetSize(CManager::Number);
-	D3DXVECTOR2 imageBlock = CTextureManager::GetInstance().GetBlock(CManager::Number);
+	D3DXVECTOR2 imageSize = CTextureManager::GetInstance().GetSize(Index(TEXTAG::Number));
+	D3DXVECTOR2 imageBlock = CTextureManager::GetInstance().GetBlock(Index(TEXTAG::Number));
 	m_size.x = imageSize.x * scale.x;
 	m_size.y = imageSize.y * scale.y;
 
@@ -145,7 +145,7 @@ void CNumber::Draw(void)
 	pDevice->SetFVF(FVF_VERTEX);
 
 	// テクスチャの設定
-	pDevice->SetTexture(0, CTextureManager::GetInstance().GetTexture(CManager::Number));
+	pDevice->SetTexture(0, CTextureManager::GetInstance().GetTexture(Index(TEXTAG::Number)));
 
 	// ポリゴンの描画
 	pDevice->DrawPrimitive
@@ -167,7 +167,7 @@ void CNumber::SetNumber(const int number)
 	Vertex* pVtx;
 	if (FAILED(m_pVtxBuff->Lock(0, 0, (void**)&pVtx, 0))) { return; }
 
-	D3DXVECTOR2 imageBlock = CTextureManager::GetInstance().GetBlock(CManager::Number);
+	D3DXVECTOR2 imageBlock = CTextureManager::GetInstance().GetBlock(Index(TEXTAG::Number));
 	for (size_t cntVtx = 0; cntVtx < VT_DEF; cntVtx++)
 	{
 		pVtx[cntVtx].tex = D3DXVECTOR2((float)(cntVtx % 2) * 1.0f / imageBlock.x + m_number / imageBlock.x, (float)(cntVtx / 2) * 1.0f);
@@ -189,7 +189,7 @@ void CNumber::AddNumber(const int number)
 	Vertex* pVtx;
 	if (FAILED(m_pVtxBuff->Lock(0, 0, (void**)&pVtx, 0))) { return; }
 
-	D3DXVECTOR2 imageBlock = CTextureManager::GetInstance().GetBlock(CManager::Number);
+	D3DXVECTOR2 imageBlock = CTextureManager::GetInstance().GetBlock(Index(TEXTAG::Number));
 	for (size_t cntVtx = 0; cntVtx < VT_DEF; cntVtx++)
 	{
 		pVtx[cntVtx].tex = D3DXVECTOR2((float)(cntVtx % 2) * 1.0f / imageBlock.x + m_number / imageBlock.x, (float)(cntVtx / 2) * 1.0f);

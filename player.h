@@ -7,6 +7,7 @@
 #pragma once
 #include "main.h"
 #include "object.h"
+#include "hierarchy.h"
 
 //--------------------------
 // プレイヤークラス (末端)
@@ -16,22 +17,20 @@ class CPlayer final : public CObject
 // 公開
 public:
 	// 状態管理
-	using STATE = enum
+	enum class STATE : Index
 	{
-		NONE = 0, // 無
-		APPEAR,   // 出現
-		NORMAL,   // 通常
-		DAMAGE,   // ダメージ
-		DEATH,    // 死
-		STATE_MAX // 状態数
+		None,     // 無
+		Appear,   // 出現
+		Normal,   // 通常
+		Damage,   // ダメージ
+		Death,    // 死
+		Max       // 状態数
 	};
 
-	CPlayer() : m_mtxWorld{}, m_state{}, m_StateTime{}, m_nLife{}, m_fSpeed{}, m_fRotSpeed{} {}
-	CPlayer(int priority) :CObject(priority), m_mtxWorld{}, m_state {}, m_StateTime{}, m_nLife{}, m_fSpeed{}, m_fRotSpeed{} {}
+	CPlayer() : m_mtxWorld{}, m_state{}, m_StateTime{}, m_nLife{}, m_fSpeed{}, m_fRotSpeed{}, m_modelID{}, m_motionID{} {}
+	CPlayer(int priority) :CObject(priority), m_mtxWorld{}, m_state{}, m_StateTime{}, m_nLife{}, m_fSpeed{}, m_fRotSpeed{}, m_modelID{}, m_motionID{} {}
 	~CPlayer() = default;
 
-	static HRESULT Load(const size_t modelNum, const string_view sTexturePass[], const D3DXVECTOR3 offSet[], const int modelParentIdx[] = nullptr);
-	static void Unload(void) { delete m_modelID; m_modelID = nullptr; };
 	static CPlayer* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float fSpeed, float fRotSpeed, int priority = 3);
 
 	HRESULT Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float fSpeed, float fRotSpeed);
@@ -51,9 +50,10 @@ private:
 	static constexpr float APPEAR_TIME = 2.0f; // 出現時間
 	static constexpr float DAMAGE_TIME = 0.5f; // ダメージ時間
 	static constexpr float DEATH_TIME = 2.0f;  // 死時間
-
-	static Index* m_modelID;                       // モデルのインデックス
-	static size_t m_modelNum;                      // モデルの数
+	
+	static vector<hierarchy::PartsInfo> m_hierarchy; // 階層構造
+	vector<Index> m_modelID;                         // モデルのインデックス
+	Index m_motionID;                                // モーションのインデックス
 
 	D3DXMATRIX m_mtxWorld;                  // ワールドマトリックス
 

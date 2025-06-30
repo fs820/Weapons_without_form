@@ -66,7 +66,7 @@ CScore* CScore::Create(Transform transform, size_t digits, float space, int prio
 //------------------------------
 HRESULT CScore::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale)
 {
-	CObject::Init(SCORE); // 親クラスの初期化
+	CObject::Init(TYPE::Score); // 親クラスの初期化
 
 	CRenderer renderer = CManager::GetRenderer();
 	LPDIRECT3DDEVICE9 pDevice = renderer.GetDevice(); // レンダラーからデバイスを取得
@@ -103,7 +103,7 @@ HRESULT CScore::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale)
 //------------------------------
 HRESULT CScore::Init(Transform transform)
 {
-	CObject::Init(SCORE); // 親クラスの初期化
+	CObject::Init(TYPE::Score); // 親クラスの初期化
 
 	CRenderer renderer = CManager::GetRenderer();
 	LPDIRECT3DDEVICE9 pDevice = renderer.GetDevice(); // レンダラーからデバイスを取得

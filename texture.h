@@ -53,23 +53,18 @@ public:
 	HRESULT Load(vector<path> texturePassList, vector<D3DXVECTOR2> textureBlockList);
 	void Unload(void);
 	Index Register(const path sTexturePath, const D3DXVECTOR2 block = D3DXVECTOR2(1.0f, 1.0f));
-	path GetPath(Index idx) const { return (idx >= 0 && idx < m_nNumAll) ? m_apTexture[idx]->GetPath() : path(); }
-	D3DXVECTOR2 GetBlock(Index idx) const { return (idx >= 0 && idx < m_nNumAll) ? m_apTexture[idx]->GetBlock() : D3DXVECTOR2(~0, ~0); }
-	LPDIRECT3DTEXTURE9 GetTexture(Index idx) const { return (idx >= 0 && idx < m_nNumAll) ? m_apTexture[idx]->GetTexture() : nullptr; }
-	D3DXVECTOR2 GetSize(Index idx) const { return (idx >= 0 && idx < m_nNumAll) ? m_apTexture[idx]->GetSize() : D3DXVECTOR2(~0, ~0); }
-	D3DXVECTOR2 GetBlockSize(Index idx) const { return (idx >= 0 && idx < m_nNumAll) ? m_apTexture[idx]->GetBlockSize() : D3DXVECTOR2(~0, ~0); }
+	path GetPath(Index idx) const { return (idx >= 0 && idx < m_apTexture.size()) ? m_apTexture[idx]->GetPath() : path(); }
+	D3DXVECTOR2 GetBlock(Index idx) const { return (idx >= 0 && idx < m_apTexture.size()) ? m_apTexture[idx]->GetBlock() : D3DXVECTOR2(~0, ~0); }
+	LPDIRECT3DTEXTURE9 GetTexture(Index idx) const { return (idx >= 0 && idx < m_apTexture.size()) ? m_apTexture[idx]->GetTexture() : nullptr; }
+	D3DXVECTOR2 GetSize(Index idx) const { return (idx >= 0 && idx < m_apTexture.size()) ? m_apTexture[idx]->GetSize() : D3DXVECTOR2(~0, ~0); }
+	D3DXVECTOR2 GetBlockSize(Index idx) const { return (idx >= 0 && idx < m_apTexture.size()) ? m_apTexture[idx]->GetBlockSize() : D3DXVECTOR2(~0, ~0); }
 
 // 非公開
 private:
-	static constexpr size_t MAX_TEXTURE = 128; // テクスチャ最大数
-
 	static CTextureManager m_instance;  // 自分のインスタンス
 	
-	CTextureManager() : m_apTexture{}, m_nNumAll{},m_typePass{},m_typeBlock{} {}
+	CTextureManager() : m_apTexture{} {}
 	~CTextureManager() = default;
 
-	vector<path> m_typePass;          // 規定テクスチャリスト
-	vector<D3DXVECTOR2> m_typeBlock;    // 規定テクスチャブロック
-	CTexture* m_apTexture[MAX_TEXTURE]; // テクスチャ情報
-	size_t m_nNumAll;                   // テクスチャの数
+	vector<CTexture*> m_apTexture; // テクスチャ情報
 };

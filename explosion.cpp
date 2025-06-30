@@ -17,21 +17,21 @@
 //---------------------------------------
 
 // 静的メンバ変数
-const D3DXVECTOR2 CExplosion::m_imageBlock[TYPE_MAX] = { D3DXVECTOR2(8.0f, 1.0f),D3DXVECTOR2(8.0f, 8.0f) };	 // テクスチャブロック数
+const D3DXVECTOR2 CExplosion::m_imageBlock[Index(TYPE::Max)] = { D3DXVECTOR2(8.0f, 1.0f),D3DXVECTOR2(8.0f, 8.0f) };	 // テクスチャブロック数
 const float CExplosion::m_AnimationTime = 0.5f;	                                                             // アニメーションタイム
 
-LPDIRECT3DTEXTURE9 CExplosion::m_apTexture[TYPE_MAX] = { nullptr }; // 共有テクスチャのポインタ
-D3DXVECTOR2 CExplosion::m_aImageSize[TYPE_MAX] = {};             // テクスチャサイズ
+LPDIRECT3DTEXTURE9 CExplosion::m_apTexture[Index(TYPE::Max)] = { nullptr }; // 共有テクスチャのポインタ
+D3DXVECTOR2 CExplosion::m_aImageSize[Index(TYPE::Max)] = {};             // テクスチャサイズ
 
 //------------------------------
 // ソース読み込み
 //------------------------------
-HRESULT CExplosion::Load(const string_view sTexturePass[TYPE_MAX])
+HRESULT CExplosion::Load(const string_view sTexturePass[Index(TYPE::Max)])
 {
 	LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer().GetDevice();
 
 	// テクスチャ
-	for (size_t cntTex = 0; cntTex < TYPE_MAX; cntTex++)
+	for (size_t cntTex = 0; cntTex < Index(TYPE::Max); cntTex++)
 	{
 		D3DXIMAGE_INFO imageInfo = {};
 		if (FAILED(D3DXGetImageInfoFromFile
@@ -64,7 +64,7 @@ HRESULT CExplosion::Load(const string_view sTexturePass[TYPE_MAX])
 void CExplosion::Unload(void)
 {
 	// テクスチャ
-	for (size_t cntTex = 0; cntTex < TYPE_MAX; cntTex++)
+	for (size_t cntTex = 0; cntTex < Index(TYPE::Max); cntTex++)
 	{
 		if (m_apTexture[cntTex] != nullptr)
 		{
@@ -86,7 +86,7 @@ CExplosion* CExplosion::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 sca
 		return nullptr;
 	}
 
-	pExplosion->SetSize(D3DXVECTOR3(m_aImageSize[type].x, m_aImageSize[type].y, 0.0f)); // サイズの設定
+	pExplosion->SetSize(D3DXVECTOR3(m_aImageSize[Index(type)].x, m_aImageSize[Index(type)].y, 0.0f)); // サイズの設定
 
 	// 初期化
 	if (FAILED(pExplosion->Init(pos, rot, scale, type)))
@@ -104,7 +104,7 @@ CExplosion* CExplosion::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 sca
 //------------------------------
 HRESULT CExplosion::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type)
 {
-	CObjectBillboard::Init(pos, rot, scale, EXPLOSION); // 親の初期化
+	CObjectBillboard::Init(pos, rot, scale, CObject::TYPE::Explosion); // 親の初期化
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
@@ -118,8 +118,8 @@ HRESULT CExplosion::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TY
 	m_type = type; // タイプの設定
 
 	D3DXVECTOR3 size = GetSize();     // サイズの取得
-	size.x /= m_imageBlock[m_type].x; // 画像のブロックを考慮
-	size.y /= m_imageBlock[m_type].y; // 画像のブロックを考慮
+	size.x /= m_imageBlock[Index(m_type)].x; // 画像のブロックを考慮
+	size.y /= m_imageBlock[Index(m_type)].y; // 画像のブロックを考慮
 	SetSize(size);                    // テクスチャサイズの設定
 
 	m_nAnimationCount = 0;                   // アニメーションカウント
@@ -146,7 +146,7 @@ HRESULT CExplosion::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TY
 		pVtx[cntVtx].pos = resultPos[cntVtx];
 		pVtx[cntVtx].nor = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
 		pVtx[cntVtx].col = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
-		pVtx[cntVtx].tex = D3DXVECTOR2((float)(cntVtx % 2) * (1.0f / m_imageBlock[m_type].x) + (float)(m_nAnimationCount % (int)(m_imageBlock[m_type].x)) * (1.0f / m_imageBlock[m_type].x), (float)(cntVtx / 2) * (1.0f / m_imageBlock[m_type].y) + (float)(m_nAnimationCount / (int)(m_imageBlock[m_type].x)) * (1.0f / m_imageBlock[m_type].y));
+		pVtx[cntVtx].tex = D3DXVECTOR2((float)(cntVtx % 2) * (1.0f / m_imageBlock[Index(m_type)].x) + (float)(m_nAnimationCount % (int)(m_imageBlock[Index(m_type)].x)) * (1.0f / m_imageBlock[Index(m_type)].x), (float)(cntVtx / 2) * (1.0f / m_imageBlock[Index(m_type)].y) + (float)(m_nAnimationCount / (int)(m_imageBlock[Index(m_type)].x)) * (1.0f / m_imageBlock[Index(m_type)].y));
 	}
 
 	if (FAILED(pVtxBuff->Unlock())) { return E_FAIL; }
@@ -176,9 +176,9 @@ void CExplosion::Update(void)
 
 	float deltaTime = CMain::GetDeltaTimeGameSpeed();
 
-	if (m_nAnimationCount >= (int)(m_imageBlock[m_type].x * m_imageBlock[m_type].y))
+	if (m_nAnimationCount >= (int)(m_imageBlock[Index(m_type)].x * m_imageBlock[Index(m_type)].y))
 	{
-		Release();
+		SetRelease(true);
 		return;
 	}
 
@@ -205,7 +205,7 @@ void CExplosion::Update(void)
 	size.y *= transform.scale.y;
 	CMath::Rotation(resultPos, D3DXVECTOR2(size.x, size.y), transform.rot.z);
 
-	if ((CMain::GetElapsedTime() - m_aniLastTime) >= m_AnimationTime / (m_imageBlock[m_type].x * m_imageBlock[m_type].y))
+	if ((CMain::GetElapsedTime() - m_aniLastTime) >= m_AnimationTime / (m_imageBlock[Index(m_type)].x * m_imageBlock[Index(m_type)].y))
 	{// アニメーションの更新
 		m_nAnimationCount++;
 
@@ -220,7 +220,7 @@ void CExplosion::Update(void)
 		pVtx[cntVtx].pos = resultPos[cntVtx];
 		pVtx[cntVtx].nor = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
 		pVtx[cntVtx].col = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
-		pVtx[cntVtx].tex = D3DXVECTOR2((float)(cntVtx % 2) * (1.0f / m_imageBlock[m_type].x) + (float)(m_nAnimationCount % (int)(m_imageBlock[m_type].x)) * (1.0f / m_imageBlock[m_type].x), (float)(cntVtx / 2) * (1.0f / m_imageBlock[m_type].y) + (float)(m_nAnimationCount / (int)(m_imageBlock[m_type].x)) * (1.0f / m_imageBlock[m_type].y));
+		pVtx[cntVtx].tex = D3DXVECTOR2((float)(cntVtx % 2) * (1.0f / m_imageBlock[Index(m_type)].x) + (float)(m_nAnimationCount % (int)(m_imageBlock[Index(m_type)].x)) * (1.0f / m_imageBlock[Index(m_type)].x), (float)(cntVtx / 2) * (1.0f / m_imageBlock[Index(m_type)].y) + (float)(m_nAnimationCount / (int)(m_imageBlock[Index(m_type)].x)) * (1.0f / m_imageBlock[Index(m_type)].y));
 	}
 
 	if (FAILED(pVtxBuff->Unlock())) { return; }

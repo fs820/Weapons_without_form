@@ -19,6 +19,7 @@
 #include "texture.h"
 #include "model.h"
 #include "object3D.h"
+#include "motion.h"
 
 //---------------------------------------
 //
@@ -27,34 +28,7 @@
 //---------------------------------------
 
 // 静的メンバ変数
-Index* CPlayer::m_modelID{};                       // モデルのインデックス
-size_t CPlayer::m_modelNum{};                      // モデルの数
-
-//-----------------------------
-// ソース読み込み
-//-----------------------------
-HRESULT CPlayer::Load(const size_t modelNum, const string_view sTexturePass[], const D3DXVECTOR3 offSet[], const int modelParentIdx[])
-{
-	m_modelNum = modelNum;
-	m_modelID = new Index[m_modelNum];
-
-	if (offSet == nullptr)return E_POINTER;
-
-	for (size_t cntModel = 0; cntModel < m_modelNum; cntModel++)
-	{
-		m_modelID[cntModel] = CModelManager::GetInstance().Register(sTexturePass[cntModel], offSet[cntModel]);
-	}
-
-	if (modelParentIdx != nullptr)
-	{
-		for (size_t cntModel = 0; cntModel < m_modelNum; cntModel++)
-		{
-			CModelManager::GetInstance().SetParent(m_modelID[cntModel], m_modelID[modelParentIdx[cntModel]]);
-		}
-	}
-
-	return S_OK;
-}
+vector<hierarchy::PartsInfo> CPlayer::m_hierarchy{};   // モデル情報のリスト
 
 //------------------------------
 // 生成
@@ -84,9 +58,30 @@ CPlayer* CPlayer::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, fl
 //------------------------------
 HRESULT CPlayer::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float fSpeed, float fRotSpeed)
 {
-	CObject::Init(PLAYER); // 親の初期化
+	CObject::Init(TYPE::Player); // 親の初期化
 
-	IsCollision(true); // 当たり判定をする	
+	SetCollision(true); // 当たり判定をする	
+
+	m_hierarchy = CHierarchyManager::GetInstance().GetHierarchy(Index(HIERARCHYTAG::Player)); // モデルの階層構造を取得
+	m_modelID.resize(m_hierarchy.size());
+
+	// モデルの生成
+	for (size_t cntModel = 0; cntModel < m_hierarchy.size(); cntModel++)
+	{
+		m_modelID[cntModel] = CModelManager::GetInstance().Create(m_hierarchy[cntModel].modelTag, m_hierarchy[cntModel].offSet);
+	}
+	for (size_t cntModel = 0; cntModel < m_hierarchy.size(); cntModel++)
+	{
+		if (m_hierarchy[cntModel].parentIdx >= 0)
+		{
+			CModelManager::GetInstance().SetParent(m_modelID[cntModel], m_modelID[m_hierarchy[cntModel].parentIdx]);
+		}
+	}
+
+	m_motionID = CMotionManager::GetInstance().Create();
+	CMotionManager::GetInstance().RegisterModel(m_motionID, m_modelID);
+	CMotionManager::GetInstance().Set(m_motionID, Index(MOTIONTAG::Player), 1, true);
+	CMotionManager::GetInstance().Set(m_motionID, Index(MOTIONTAG::Player), 0, true);
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
@@ -97,7 +92,7 @@ HRESULT CPlayer::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float
 
 	SetTransform(Transform(pos, rot, scale));
 
-	m_state = APPEAR;
+	m_state = STATE::Appear;
 	m_StateTime = CMain::GetElapsedTimeGameSpeed();
 
 	m_nLife = LIFE; // プレイヤーのライフ
@@ -121,7 +116,7 @@ void CPlayer::Uninit(void)
 //------------------------------
 void CPlayer::Update(void)
 {
-	if (m_state != DEATH)
+	if (m_state != STATE::Death)
 	{// 死んでなければ
 		//移動関係
 		//CInputKeyboard keyboard = CManager::GetInputKeyboard();
@@ -215,35 +210,37 @@ void CPlayer::Update(void)
 	// 状態管理
 	switch (m_state)
 	{
-	case NONE:
+	case STATE::None:
 		break;
-	case APPEAR:
+	case STATE::Appear:
 		if (CMain::GetElapsedTimeGameSpeed() - m_StateTime >= APPEAR_TIME)
 		{// 一定時間経過
-			m_state = NORMAL; // 通常状態
+			m_state = STATE::Normal; // 通常状態
 			m_StateTime = CMain::GetElapsedTimeGameSpeed(); // 時間記録
 		}
 		break;
-	case NORMAL:
+	case STATE::Normal:
 		break;
-	case DAMAGE:
+	case STATE::Damage:
 		if (CMain::GetElapsedTimeGameSpeed() - m_StateTime >= DAMAGE_TIME)
 		{// 一定時間経過
-			m_state = NORMAL; // 通常状態
+			m_state = STATE::Normal; // 通常状態
 			m_StateTime = CMain::GetElapsedTimeGameSpeed(); // 時間記録
 		}
 		break;
-	case DEATH:
+	case STATE::Death:
 		if (CMain::GetElapsedTimeGameSpeed() - m_StateTime >= DEATH_TIME)
 		{// 一定時間経過
-			Release();
+			SetRelease(true);
 			return;
 		}
 		break;
 	}
 
-	CDebugProc::Print(CDebugProc::OBJECT, "Player%d:%d", GetID(), m_state);
-	CDebugProc::Print(CDebugProc::OBJECT, "Player%d 状態カウンター:%f", GetID(), m_StateTime);
+	CMotionManager::GetInstance().Update(m_motionID);
+
+	CDebugProc::Print(CDebugProc::MODE::Object, "Player%d:%d", GetID(), m_state);
+	CDebugProc::Print(CDebugProc::MODE::Object, "Player%d 状態カウンター:%f", GetID(), m_StateTime);
 }
 
 //------------------------------
@@ -277,7 +274,7 @@ void CPlayer::Draw(void)
 	pDevice->SetTransform(D3DTS_WORLD, &m_mtxWorld);
 
 	// モデルの描画
-	for (size_t cntModel = 0; cntModel < m_modelNum; cntModel++)
+	for (size_t cntModel = 0; cntModel < m_hierarchy.size(); cntModel++)
 	{
 		CModelManager::GetInstance().Draw(m_modelID[cntModel]);
 	}
@@ -299,16 +296,16 @@ void CPlayer::Hit(int damage)
 	m_nLife -= damage; // ダメージ
 	if (m_nLife <= 0)
 	{// 体力がなくなった
-		m_state = DEATH; // 死
+		m_state = STATE::Death; // 死
 
 		Transform transform = GetTransform();
-		CExplosion::Create(transform.pos, transform.rot, transform.scale * 100.0f, CMath::Random(CExplosion::DEFAULT, CExplosion::EXTRA),4); // 爆発エフェクトを生成
+		CExplosion::Create(transform.pos, transform.rot, transform.scale * 100.0f, CMath::Random(CExplosion::TYPE::Defalt, CExplosion::TYPE::Extra),4); // 爆発エフェクトを生成
 
 		CManager::GetScore()->AddScore(-100);
 	}
 	else
 	{
-		m_state = DAMAGE; // ダメージ
+		m_state = STATE::Damage; // ダメージ
 		CManager::GetScore()->AddScore(-10);
 	}
 	m_StateTime = CMain::GetElapsedTimeGameSpeed(); // 時間

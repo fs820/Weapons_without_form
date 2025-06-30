@@ -94,7 +94,7 @@ CEffect* CEffect::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, in
 //------------------------------
 HRESULT CEffect::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, D3DXCOLOR color, float fSpeed)
 {
-	CObjectBillboard::Init(pos, rot, scale, EFFECT); // 親の初期化
+	CObjectBillboard::Init(pos, rot, scale, TYPE::Effect); // 親の初期化
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
@@ -157,7 +157,7 @@ void CEffect::Update(void)
 {
 	if (m_fLife <= 0.0f)
 	{// ライフが0以下ならば削除
-		Release();
+		SetRelease(true);
 		return;
 	}
 

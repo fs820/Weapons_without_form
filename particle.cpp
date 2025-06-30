@@ -73,6 +73,6 @@ void CParticle::Update(void)
 
 	if (m_fLife <= 0.0f)
 	{
-		Release();
+		SetRelease(true);
 	}
 }

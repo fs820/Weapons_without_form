@@ -28,7 +28,11 @@ public:
 	static HRESULT Rotation(D3DXVECTOR3 resultPos[], const D3DXVECTOR2 size, const float fAngle);
 
 	static float NormalizeAngle(float angle);
-	static void NormalizeAngle(float* pAngle);
+	static void NormalizeAngle(float* const pAngle);
+    static D3DXVECTOR3 NormalizeRot(const D3DXVECTOR3 rot);
+    static void NormalizeRot(D3DXVECTOR3* pRot);
+
+    static void NormalizeAngleDeltaAndAdd(float* pDestAngle, float angle, const float coefficient, const float deltaTime);
 
 	static void SpherePos(D3DXVECTOR3* const pOutPos, const D3DXVECTOR3 basePos, const D3DXVECTOR3 rot, const float Length);
 

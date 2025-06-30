@@ -152,8 +152,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hInstancePrev, _
 			CDebugProc::Print("FPS:%f", 1.0f / deltaTime);
 			CDebugProc::Print("終了:[ESC]");
 			CDebugProc::Print("フルスクリーン:[F11]");
-			CDebugProc::Print(CDebugProc::WINDOW, "経過時間:%f", elapsedTime);
-			CDebugProc::Print(CDebugProc::WINDOW, "フレーム時間:%f", deltaTime);
+			CDebugProc::Print(CDebugProc::MODE::Window, "経過時間:%f", elapsedTime);
+			CDebugProc::Print(CDebugProc::MODE::Window, "フレーム時間:%f", deltaTime);
 
 			if (!CMain::IsStop())
 			{// 更新停止状態でない
@@ -163,13 +163,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hInstancePrev, _
 		}
 	}
 
-	// マネージャーの破棄
-	if (pManager != nullptr)
-	{
-		pManager->Uninit();
-		delete pManager;
-		pManager = nullptr;
-	}
+	SAFE_UNINIT(pManager); // マネージャーの破棄
 
 	//ウインドウクラスの登録解除
 	UnregisterClass(CMain::CLASS_NAME, wcex.hInstance);
@@ -207,13 +201,13 @@ LRESULT CALLBACK CMain::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 		LPBYTE pData = new BYTE[rawInputSize];
 		if (pData == nullptr)
 		{// メモリ確保失敗
-			CDebugProc::Print(CDebugProc::SYSTEM, "Error: Failed to allocate memory for raw input data!");
+			CDebugProc::Print(CDebugProc::MODE::System, "Error: Failed to allocate memory for raw input data!");
 			break;
 		}
 
 		if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, pData, &rawInputSize, sizeof(RAWINPUTHEADER)) == -1)
 		{// データ取得失敗
-			CDebugProc::Print(CDebugProc::SYSTEM, "Error: GetRawInputData failed!");
+			CDebugProc::Print(CDebugProc::MODE::System, "Error: GetRawInputData failed!");
 			delete[] pData;
 			break;
 		}
@@ -254,11 +248,11 @@ LRESULT CALLBACK CMain::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 		}
 		else if (pRawInput->header.dwType == RIM_TYPEMOUSE)
 		{// マウスイベント
-			CDebugProc::Print(CDebugProc::SYSTEM, "--- Mouse WM_INPUT Received ---");
+			CDebugProc::Print(CDebugProc::MODE::System, "--- Mouse WM_INPUT Received ---");
 		}
 		 else if (pRawInput->header.dwType == RIM_TYPEHID)
 		{// HIDイベント
-			CDebugProc::Print(CDebugProc::SYSTEM, "--- HID WM_INPUT Received ---");
+			CDebugProc::Print(CDebugProc::MODE::System, "--- HID WM_INPUT Received ---");
 		}
 
 		delete[] pData; // 解放
@@ -604,12 +598,12 @@ void CMain::RegisterStandardInputDevices(void)
 
 	if (RegisterRawInputDevices(RawDevice, 3, sizeof(RAWINPUTDEVICE)))
 	{
-		CDebugProc::Print(CDebugProc::STATIC, "Standard input devices registered successfully");
+		CDebugProc::Print(CDebugProc::MODE::Static, "Standard input devices registered successfully");
 	}
 	else
 	{
 		DWORD error = GetLastError();
-		CDebugProc::Print(CDebugProc::STATIC, "Standard registration failed: %d", error);
+		CDebugProc::Print(CDebugProc::MODE::Static, "Standard registration failed: %d", error);
 	}
 }
 
@@ -623,20 +617,20 @@ void CMain::RegisterAllInputDevices(void)
 		UINT nDevices = 0;
 		if (GetRawInputDeviceList(nullptr, &nDevices, sizeof(RAWINPUTDEVICELIST)) != 0)
 		{
-			CDebugProc::Print(CDebugProc::STATIC, "Failed to get raw input device count");
+			CDebugProc::Print(CDebugProc::MODE::Static, "Failed to get raw input device count");
 			return;
 		}
 
 		if (nDevices == 0)
 		{
-			CDebugProc::Print(CDebugProc::STATIC, "No raw input devices found");
+			CDebugProc::Print(CDebugProc::MODE::Static, "No raw input devices found");
 			return;
 		}
 
 		std::vector<RAWINPUTDEVICELIST> devices(nDevices);
 		if (GetRawInputDeviceList(devices.data(), &nDevices, sizeof(RAWINPUTDEVICELIST)) == (UINT)-1)
 		{
-			CDebugProc::Print(CDebugProc::STATIC, "Failed to get raw input device list");
+			CDebugProc::Print(CDebugProc::MODE::Static, "Failed to get raw input device list");
 			return;
 		}
 
@@ -670,7 +664,7 @@ void CMain::RegisterAllInputDevices(void)
 						rawDevice.usUsage = usage;
 						inputDevices.push_back(rawDevice);
 
-						CDebugProc::Print(CDebugProc::STATIC, "Adding keyboard: %04x:%04x (Type: %d, SubType: %d, KeyboardMode: %d)",
+						CDebugProc::Print(CDebugProc::MODE::Static, "Adding keyboard: %04x:%04x (Type: %d, SubType: %d, KeyboardMode: %d)",
 							usagePage, usage, info.keyboard.dwType, info.keyboard.dwSubType, info.keyboard.dwKeyboardMode);
 					}
 				}
@@ -688,7 +682,7 @@ void CMain::RegisterAllInputDevices(void)
 						rawDevice.usUsage = usage;
 						inputDevices.push_back(rawDevice);
 
-						CDebugProc::Print(CDebugProc::STATIC, "Adding mouse: %04x:%04x (ID: %d, Buttons: %d, SampleRate: %d)",
+						CDebugProc::Print(CDebugProc::MODE::Static, "Adding mouse: %04x:%04x (ID: %d, Buttons: %d, SampleRate: %d)",
 							usagePage, usage, info.mouse.dwId, info.mouse.dwNumberOfButtons, info.mouse.dwSampleRate);
 					}
 				}
@@ -709,7 +703,7 @@ void CMain::RegisterAllInputDevices(void)
 							rawDevice.usUsage = usage;
 							inputDevices.push_back(rawDevice);
 
-							CDebugProc::Print(CDebugProc::STATIC, "Adding HID device: %04x:%04x (VendorId: %04x, ProductId: %04x)",
+							CDebugProc::Print(CDebugProc::MODE::Static, "Adding HID device: %04x:%04x (VendorId: %04x, ProductId: %04x)",
 								usagePage, usage, info.hid.dwVendorId, info.hid.dwProductId);
 						}
 					}
@@ -722,18 +716,18 @@ void CMain::RegisterAllInputDevices(void)
 			if (RegisterRawInputDevices(inputDevices.data(), inputDevices.size(), sizeof(RAWINPUTDEVICE)))
 			{
 				DWORD error = GetLastError();
-				CDebugProc::Print(CDebugProc::STATIC, "Successfully registered %zu devices LastError:%d", inputDevices.size(), error);
+				CDebugProc::Print(CDebugProc::MODE::Static, "Successfully registered %zu devices LastError:%d", inputDevices.size(), error);
 			}
 			else
 			{
 				DWORD error = GetLastError();
-				CDebugProc::Print(CDebugProc::STATIC, "Registration failed: %d", error);
+				CDebugProc::Print(CDebugProc::MODE::Static, "Registration failed: %d", error);
 			}
 		}
 	}
 	catch (...)
 	{
-		CDebugProc::Print(CDebugProc::STATIC, "Exception in RegisterAllKeyboardDevices");
+		CDebugProc::Print(CDebugProc::MODE::Static, "Exception in RegisterAllKeyboardDevices");
 	}
 }
 
@@ -756,7 +750,7 @@ void CMain::DebugPrintDeviceInfo(void)
 			return;
 		}
 
-		CDebugProc::Print(CDebugProc::STATIC, "=== Device Information ===");
+		CDebugProc::Print(CDebugProc::MODE::Static, "=== Device Information ===");
 
 		for (size_t i = 0; i < devices.size(); ++i)
 		{
@@ -767,32 +761,32 @@ void CMain::DebugPrintDeviceInfo(void)
 
 			if (GetRawInputDeviceInfo(dev.hDevice, RIDI_DEVICEINFO, &info, &size) > 0)
 			{
-				CDebugProc::Print(CDebugProc::STATIC, "Device %zu: Type=%d", i, info.dwType);
+				CDebugProc::Print(CDebugProc::MODE::Static, "Device %zu: Type=%d", i, info.dwType);
 
 				switch (info.dwType)
 				{
 				case RIM_TYPEKEYBOARD:
-					CDebugProc::Print(CDebugProc::STATIC, "  Keyboard - Type:%d SubType:%d KeyboardMode:%d",
+					CDebugProc::Print(CDebugProc::MODE::Static, "  Keyboard - Type:%d SubType:%d KeyboardMode:%d",
 						info.keyboard.dwType, info.keyboard.dwSubType, info.keyboard.dwKeyboardMode);
 					break;
 
 				case RIM_TYPEMOUSE:
-					CDebugProc::Print(CDebugProc::STATIC, "  Mouse - ID:%d Buttons:%d SampleRate:%d HasHorizontalWheel:%s",
+					CDebugProc::Print(CDebugProc::MODE::Static, "  Mouse - ID:%d Buttons:%d SampleRate:%d HasHorizontalWheel:%s",
 						info.mouse.dwId, info.mouse.dwNumberOfButtons, info.mouse.dwSampleRate,
 						info.mouse.fHasHorizontalWheel ? "Yes" : "No");
 					break;
 
 				case RIM_TYPEHID:
-					CDebugProc::Print(CDebugProc::STATIC, "  HID - VendorId:%04x ProductId:%04x UsagePage:%04x Usage:%04x",
+					CDebugProc::Print(CDebugProc::MODE::Static, "  HID - VendorId:%04x ProductId:%04x UsagePage:%04x Usage:%04x",
 						info.hid.dwVendorId, info.hid.dwProductId, info.hid.usUsagePage, info.hid.usUsage);
 					break;
 				}
 			}
 		}
-		CDebugProc::Print(CDebugProc::STATIC, "========================");
+		CDebugProc::Print(CDebugProc::MODE::Static, "========================");
 	}
 	catch (...)
 	{
-		CDebugProc::Print(CDebugProc::STATIC, "Exception in DebugPrintDeviceInfo");
+		CDebugProc::Print(CDebugProc::MODE::Static, "Exception in DebugPrintDeviceInfo");
 	}
 }

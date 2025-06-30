@@ -36,6 +36,8 @@ using std::unordered_map;    // 連想(ペア)配列
 using std::set;              // 一意の配列
 using std::optional;         // エラー対応
 using std::array;            // 配列
+using std::logic_error;      // 論理エラー
+using std::exception;        // 基本例外
 using std::bit_cast;         // ビット単位のキャスト
 using std::clamp;            // clamp
 using std::max;              // max
@@ -88,8 +90,8 @@ public:
 	//--------------------
 
 	// 名前
-	static constexpr const char* CLASS_NAME = "WindowClass";        // クラス
-	static constexpr const char* WINDOW_NAME = "シューティング";    // ウインドウ
+	static constexpr const char* CLASS_NAME = "WindowClass";      // クラス
+	static constexpr const char* WINDOW_NAME = "Telepathy_Wepon"; // ウインドウ
 
 	// ウインドウのサイズ
 	//static constexpr float SCREEN_WIDTH = 1280.0f;  // 幅
@@ -117,6 +119,46 @@ private:
 	static bool m_bStop;        // ストップフラグ
 	static float m_gameSpeed;   // ゲームスピード
 
+};
+
+
+//--------------------------
+// 一度だけ初期化可能を付与
+//--------------------------
+template<typename T>
+class WriteOnce
+{
+public:
+	WriteOnce() :m_storage{} {};
+	~WriteOnce() = default;
+
+	WriteOnce(WriteOnce&&) = delete;
+	WriteOnce(const WriteOnce&) = delete;
+	WriteOnce& operator=(const WriteOnce&) = delete;
+	WriteOnce& operator=(WriteOnce&&) = delete;
+
+	// 値を設定
+	void Set(const T& value)
+	{
+		if (m_storage.has_value())
+		{// 既に値が設定されている場合はエラー
+			throw logic_error("Value already set");
+		}
+		m_storage = value;
+	}
+
+	// 値を取得
+	const T& Get() const
+	{
+		if (!m_storage.has_value())
+		{// 値が設定されていない場合はエラー
+			throw logic_error("Value not set");
+		}
+		return m_storage.value();
+	}
+
+private:
+	optional<T> m_storage;
 };
 
 // >> が使える型かどうか
@@ -203,7 +245,7 @@ optional<T> StringToData(const string_view source, const string_view tag, const 
 //-----------------------
 // 文字列の指定範囲を抜き出す関数
 //-----------------------
-inline optional<string_view> ExtractBlock(const string_view source, const string_view tag, const string_view endtag, const Index index)
+inline optional<string_view> ExtractBlock(const string_view source, const string_view tag, const string_view endtag, const Index index = 0)
 {
 	size_t pos = 0;
 	size_t currentIndex = 0;
@@ -212,24 +254,37 @@ inline optional<string_view> ExtractBlock(const string_view source, const string
 	{
 		// 開始タグを探す
 		size_t startPos = source.find(tag, pos);
-		if (startPos == string_view::npos) break;
+		if (startPos == std::string_view::npos) break;
 
-		// 終了タグを探す（開始より後）
-		size_t endPos = source.find(endtag, startPos + tag.size());
-		if (endPos == string_view::npos) break;
+		// 中身の開始位置
+		size_t contentStart = startPos + tag.size();
 
-		endPos += endtag.size(); // 終了タグも含める
+		// 終了タグを探す（開始タグの後）
+		size_t endPos = source.find(endtag, contentStart);
+		if (endPos == std::string_view::npos) break;
 
-		// 必要な index に到達したらそのブロックを返す
+		// 必要な index に到達したらタグを含まない中身のみ返す
 		if (currentIndex == index)
 		{
-			// コメント行や無関係な行を含めたくない場合、さらに行調整してもOK
-			return source.substr(startPos, endPos - startPos);
+			return source.substr(contentStart, endPos - contentStart);
 		}
 
 		++currentIndex;
-		pos = endPos;
+		pos = endPos + endtag.size(); // 次の検索へ
 	}
 
-	return nullopt;
+	return std::nullopt;
+}
+
+//-----------------------
+// Swapを使ったvectorの要素削除
+//-----------------------
+template<typename T>
+void SwapRemove(std::vector<T>& vec, size_t index)
+{
+	if (index < vec.size())
+	{
+		std::swap(vec[index], vec.back());
+		vec.pop_back();
+	}
 }

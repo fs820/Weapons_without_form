@@ -500,7 +500,7 @@ Mesh {
    0.000000;0.000000;0.000000;;
    0.000000;0.000000;0.000000;;
    TextureFilename {
-    "data\\TEXTURE\\FASETEX.png";
+    "data/TEXTURE/FASETEX.png";
    }
   }
  }

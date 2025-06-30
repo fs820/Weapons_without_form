@@ -15,7 +15,7 @@
 
 // 静的メンバ変数
 LPD3DXFONT CDebugProc::m_pFont{};                                // フォントポインタ
-string CDebugProc::m_sDebug[MODE_MAX]{};                         // 文字列
+string CDebugProc::m_sDebug[Index(MODE::Max)]{};                         // 文字列
 D3DXCOLOR CDebugProc::m_color{ D3DXCOLOR(1.0f,1.0f,1.0f,1.0f) }; // 色
 UINT CDebugProc::m_flag{ DT_LEFT | DT_TOP | DT_WORDBREAK };      // 表示方法
 bool CDebugProc::m_bDraw{ true };                                // 辨官するか
@@ -67,10 +67,10 @@ void CDebugProc::Draw(void)
 		CManager::GetRenderer().GetDxScreenSize(&screenSize);
 		RECT rect{ 0,0,LONG(screenSize.x),LONG(screenSize.y) };
 
-		m_pFont->DrawText(nullptr, m_sDebug[m_drawMode].c_str(), -1, &rect, m_flag, D3DCOLOR_COLORVALUE(m_color.r, m_color.g, m_color.b, m_color.a));
+		m_pFont->DrawText(nullptr, m_sDebug[Index(m_drawMode)].c_str(), -1, &rect, m_flag, D3DCOLOR_COLORVALUE(m_color.r, m_color.g, m_color.b, m_color.a));
 	}
 
-	for (size_t cntMode = WINDOW; cntMode < MODE_MAX; cntMode++)
+	for (size_t cntMode = Index(MODE::Window); cntMode < Index(MODE::Max); cntMode++)
 	{
 		m_sDebug[cntMode].clear(); // 文字列をクリア
 	}
@@ -120,7 +120,7 @@ void CDebugProc::Print(const char* format, ...)
 	// エラー処理
 	if (format == nullptr)
 	{// 無効なformat
-		for (size_t cntMode = WINDOW; cntMode < MODE_MAX; cntMode++)
+		for (size_t cntMode = Index(MODE::Window); cntMode < Index(MODE::Max); cntMode++)
 		{// STATIC以外の文字列に適応する
 			m_sDebug[cntMode] += "無効なformat\n";
 		}
@@ -140,7 +140,7 @@ void CDebugProc::Print(const char* format, ...)
 	if (formatSize < 0)
 	{// 無効なサイズ
 		va_end(args);
-		for (size_t cntMode = WINDOW; cntMode < MODE_MAX; cntMode++)
+		for (size_t cntMode = Index(MODE::Window); cntMode < Index(MODE::Max); cntMode++)
 		{// STATIC以外の文字列に適応する
 			m_sDebug[cntMode] += "無効なformat\n";
 		}
@@ -149,14 +149,14 @@ void CDebugProc::Print(const char* format, ...)
 	else if (formatSize == 0)
 	{// formatが空
 		va_end(args);
-		for (size_t cntMode = WINDOW; cntMode < MODE_MAX; cntMode++)
+		for (size_t cntMode = Index(MODE::Window); cntMode < Index(MODE::Max); cntMode++)
 		{// STATIC以外の文字列に適応する
 			m_sDebug[cntMode] += "\n";
 		}
 		return;
 	}
 
-	for (size_t cntMode = WINDOW; cntMode < MODE_MAX; cntMode++)
+	for (size_t cntMode = Index(MODE::Window); cntMode < Index(MODE::Max); cntMode++)
 	{// STATIC以外の文字列に適応する
 		// 文字列に追加スペースを用意する
 		size_t oldSize = m_sDebug[cntMode].size();
@@ -177,7 +177,7 @@ void CDebugProc::Print(const MODE mode, const char* format, ...)
 	// エラー処理
 	if (format == nullptr)
 	{// 無効なformat
-		m_sDebug[mode] += "無効なformat\n";
+		m_sDebug[Index(mode)] += "無効なformat\n";
 		return;
 	}
 
@@ -194,22 +194,22 @@ void CDebugProc::Print(const MODE mode, const char* format, ...)
 	if (formatSize < 0)
 	{// 無効なサイズ
 		va_end(args);
-		m_sDebug[mode] += "無効なformat\n";
+		m_sDebug[Index(mode)] += "無効なformat\n";
 		return;
 	}
 	else if (formatSize == 0)
 	{// formatが空
 		va_end(args);
-		m_sDebug[mode] += "\n";
+		m_sDebug[Index(mode)] += "\n";
 		return;
 	}
 
 	// 文字列に追加スペースを用意する
-	size_t oldSize = m_sDebug[mode].size();
-	m_sDebug[mode].resize(oldSize + formatSize + 1);
+	size_t oldSize = m_sDebug[Index(mode)].size();
+	m_sDebug[Index(mode)].resize(oldSize + formatSize + 1);
 
 	// 文字列に追加
-	vsnprintf(&m_sDebug[mode][oldSize], formatSize + 1, format, args); // 文字列を追加
-	m_sDebug[mode][oldSize + formatSize] = '\n';                       // nullを改行に上書き
+	vsnprintf(&m_sDebug[Index(mode)][oldSize], formatSize + 1, format, args); // 文字列を追加
+	m_sDebug[Index(mode)][oldSize + formatSize] = '\n';                       // nullを改行に上書き
 	va_end(args);                                                      // ポインタ解放
 }

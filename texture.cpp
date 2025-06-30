@@ -73,15 +73,18 @@ CTextureManager CTextureManager::m_instance{};     // 自分のインスタンス
 //----------------------------------------------------
 HRESULT CTextureManager::Load(vector<path> texturePassList, vector<D3DXVECTOR2> textureBlockList)
 {
-	m_typePass = texturePassList;
-	m_typeBlock = textureBlockList;
+	// vectorのサイズを事前に確保
+	if (m_apTexture.size() < texturePassList.size())
+	{
+		m_apTexture.resize(texturePassList.size());
+	}
 
 	// 規定テクスチャの生成
-	for (size_t cntTex = 0; cntTex < m_typePass.size(); cntTex++)
+	for (size_t cntTex = 0; cntTex < m_apTexture.size(); cntTex++)
 	{// 規定タイプ回す
 		if (m_apTexture[cntTex] == nullptr)
 		{// なければ
-			m_apTexture[cntTex] = new CTexture(m_typePass[cntTex], m_typeBlock[cntTex]); // 生成
+			m_apTexture[cntTex] = new CTexture(texturePassList[cntTex], textureBlockList[cntTex]); // 生成
 
 			if (m_apTexture[cntTex] != nullptr)
 			{// あれば
@@ -93,7 +96,6 @@ HRESULT CTextureManager::Load(vector<path> texturePassList, vector<D3DXVECTOR2> 
 					return E_FAIL;
 				}
 				m_apTexture[cntTex]->AddUseCount();                     // 使っている数の追加
-				m_nNumAll++; // 足す
 			}
 			else
 			{
@@ -110,13 +112,13 @@ HRESULT CTextureManager::Load(vector<path> texturePassList, vector<D3DXVECTOR2> 
 //----------------------------------------------------
 void CTextureManager::Unload(void)
 {
-	for (size_t cntTexture = 0; cntTexture < m_nNumAll; cntTexture++)
+	for (auto& pTeture : m_apTexture)
 	{// 全てのテクスチャ
-		if (m_apTexture[cntTexture] != nullptr)
+		if (pTeture != nullptr)
 		{// あれば
-			m_apTexture[cntTexture]->Uninit(); // 終了
-			delete m_apTexture[cntTexture];    // 開放
-			m_apTexture[cntTexture] = nullptr; // null
+			pTeture->Uninit(); // 終了
+			delete pTeture;    // 開放
+			pTeture = nullptr; // null
 		}
 	}
 }
@@ -132,7 +134,7 @@ size_t CTextureManager::Register(const path sTexturePath, const D3DXVECTOR2 bloc
 	}
 
 	// 同一テクスチャ確認
-	for (size_t cntTexture = 0; cntTexture < m_nNumAll; cntTexture++)
+	for (size_t cntTexture = 0; cntTexture < m_apTexture.size(); cntTexture++)
 	{// 今までのテクスチャ
 		if (m_apTexture[cntTexture]->GetPath() == sTexturePath)
 		{// 同じテクスチャを発見
@@ -142,26 +144,18 @@ size_t CTextureManager::Register(const path sTexturePath, const D3DXVECTOR2 bloc
 	}
 
 	// 新テクスチャの生成
-	if (m_apTexture[m_nNumAll] == nullptr)
-	{// なければ
-		m_apTexture[m_nNumAll] = new CTexture(sTexturePath, block); // 生成
-
-		if (m_apTexture[m_nNumAll] != nullptr)
-		{// あれば
-			if (FAILED(m_apTexture[m_nNumAll]->Init()))
-			{
-				m_apTexture[m_nNumAll]->Uninit();
-				delete m_apTexture[m_nNumAll];
-				m_apTexture[m_nNumAll] = nullptr;
-				return INVALID_ID;
-			}
-			m_apTexture[m_nNumAll]->AddUseCount();                         // 使っている数の追加
-			return m_nNumAll++; // 足す前の値を返しその後足す
-		}
-		else
-		{
-			return INVALID_ID; // エラー値
-		}
+	CTexture* pTexture = new CTexture(sTexturePath, block);
+	if (FAILED(pTexture->Init()))
+	{
+		pTexture->Uninit();
+		delete pTexture;
+		pTexture = nullptr;
+		return INVALID_ID;
 	}
-	return INVALID_ID; // エラー値
+	else
+	{
+		pTexture->AddUseCount(); // 使っている数の追加
+		m_apTexture.push_back(pTexture); // 追加
+		return m_apTexture.size() - 1;
+	}
 }

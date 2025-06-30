@@ -26,8 +26,8 @@ void CCamera::Init(void)
 	for (int nCount = 0; nCount < CAMERA_XNUM * CAMERA_YNUM; nCount++)
 	{
 		//カメラ設定
-		m_camera[nCount].posV = D3DXVECTOR3(0.0f, 300.0f, -50.0f);
-		m_camera[nCount].posVDest = D3DXVECTOR3(0.0f, 300.0f, -50.0f);
+		m_camera[nCount].posV = D3DXVECTOR3(0.0f, 300.0f, -400.0f);
+		m_camera[nCount].posVDest = D3DXVECTOR3(0.0f, 300.0f, -400.0f);
 		m_camera[nCount].posR = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 		m_camera[nCount].posRDest = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 		m_camera[nCount].posU = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
@@ -374,7 +374,7 @@ void CCamera::Update(void)
 //-------------------
 //描画処理
 //-------------------
-void CCamera::Set(void)
+void CCamera::Set(Index idx)
 {
 	LPDIRECT3DDEVICE9 pDevice;//デバイスへポインタ
 	D3DXMATRIX mtxRot, mtxTrans;//計算マトリックス
@@ -382,60 +382,60 @@ void CCamera::Set(void)
 	//デバイスの取得
 	pDevice = CManager::GetRenderer().GetDevice();
 
-	for (size_t cntCamera = 0; cntCamera < CAMERA_XNUM * CAMERA_YNUM; cntCamera++)
-	{
-		//ビューマトリックス初期化
-		D3DXMatrixIdentity(&m_camera[cntCamera].mtxView);
+	//ビューマトリックス初期化
+	D3DXMatrixIdentity(&m_camera[idx].mtxView);
 
-		//ビューマトリックスの作成
-		D3DXMatrixLookAtLH
-		(
-			&m_camera[cntCamera].mtxView,
-			&m_camera[cntCamera].posV,
-			&m_camera[cntCamera].posR,
-			&m_camera[cntCamera].posU
-		);
+	//ビューマトリックスの作成
+	D3DXMatrixLookAtLH
+	(
+		&m_camera[idx].mtxView,
+		&m_camera[idx].posV,
+		&m_camera[idx].posR,
+		&m_camera[idx].posU
+	);
 
-		//ビューマトリックスの設定
-		pDevice->SetTransform(D3DTS_VIEW, &m_camera[cntCamera].mtxView);
+	//ビューマトリックスの設定
+	pDevice->SetTransform(D3DTS_VIEW, &m_camera[idx].mtxView);
 
-		//プロジェクションマトリックス初期化
-		D3DXMatrixIdentity(&m_camera[cntCamera].mtxProjection);
+	//プロジェクションマトリックス初期化
+	D3DXMatrixIdentity(&m_camera[idx].mtxProjection);
 
-		// スクリーンサイズ
-		D3DXVECTOR2 screenSize{};
-		CManager::GetRenderer().GetDxScreenSize(&screenSize);
+	// スクリーンサイズ
+	D3DXVECTOR2 screenSize{};
+	CManager::GetRenderer().GetDxScreenSize(&screenSize);
 
-		//プロジェクションマトリックスの作成
-		D3DXMatrixPerspectiveFovLH
-		(
-			&m_camera[cntCamera].mtxProjection,
-			D3DXToRadian(CAMERA_WIDTH),//視界の広さ
-			screenSize.x / screenSize.y,//比率
-			CAMERA_MIN,//どこから
-			CAMERA_MAX//どこまで
-		);
+	//プロジェクションマトリックスの作成
+	D3DXMatrixPerspectiveFovLH
+	(
+		&m_camera[idx].mtxProjection,
+		D3DXToRadian(CAMERA_WIDTH),//視界の広さ
+		screenSize.x / screenSize.y,//比率
+		CAMERA_MIN,//どこから
+		CAMERA_MAX//どこまで
+	);
 
-		//プロジェクションマトリックスの設定
-		pDevice->SetTransform(D3DTS_PROJECTION, &m_camera[cntCamera].mtxProjection);
-	}
+	//プロジェクションマトリックスの設定
+	pDevice->SetTransform(D3DTS_PROJECTION, &m_camera[idx].mtxProjection);
+
+	// ビューポートの設定
+	pDevice->SetViewport(&m_camera[idx].viewport);
 }
 
 //-------------------
 // カメラの位置を取得
 //-------------------
-D3DXVECTOR3 CCamera::GetPos(void)  const
+D3DXVECTOR3 CCamera::GetPos(Index idx)  const
 {
 	//カメラの位置を取得
-	return m_camera[0].posV;
+	return m_camera[idx].posV;
 }
 
 //--------------------
 //背景用
 //--------------------
-void CCamera::View(int nNumber)
+void CCamera::View(Index idx)
 {
-	if (nNumber == CAMERA_XNUM * CAMERA_YNUM)
+	if (idx == CAMERA_XNUM * CAMERA_YNUM)
 	{
 		for (int nCount = 0; nCount < CAMERA_XNUM * CAMERA_YNUM; nCount++)
 		{
@@ -447,18 +447,18 @@ void CCamera::View(int nNumber)
 		return;
 	}
 
-	m_camera[nNumber].posV = D3DXVECTOR3(0.0f, 120.0f, -6000.0f);
-	m_camera[nNumber].posR = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
-	m_camera[nNumber].fDistance = sqrtf((m_camera[nNumber].posR.x - m_camera[nNumber].posV.x) * (m_camera[nNumber].posR.x - m_camera[nNumber].posV.x) + (m_camera[nNumber].posR.y - m_camera[nNumber].posV.y) * (m_camera[nNumber].posR.y - m_camera[nNumber].posV.y) + (m_camera[nNumber].posR.z - m_camera[nNumber].posV.z) * (m_camera[nNumber].posR.z - m_camera[nNumber].posV.z));
-	m_camera[nNumber].fDistanceMax = CAMERA_DISTANCE_VIEW_MAX;
+	m_camera[idx].posV = D3DXVECTOR3(0.0f, 120.0f, -6000.0f);
+	m_camera[idx].posR = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
+	m_camera[idx].fDistance = sqrtf((m_camera[idx].posR.x - m_camera[idx].posV.x) * (m_camera[idx].posR.x - m_camera[idx].posV.x) + (m_camera[idx].posR.y - m_camera[idx].posV.y) * (m_camera[idx].posR.y - m_camera[idx].posV.y) + (m_camera[idx].posR.z - m_camera[idx].posV.z) * (m_camera[idx].posR.z - m_camera[idx].posV.z));
+	m_camera[idx].fDistanceMax = CAMERA_DISTANCE_VIEW_MAX;
 }
 
 //--------------------
 //ゲーム用
 //--------------------
-void CCamera::Game(int nNumber)
+void CCamera::Game(Index idx)
 {
-	if (nNumber == CAMERA_XNUM * CAMERA_YNUM)
+	if (idx == CAMERA_XNUM * CAMERA_YNUM)
 	{
 		for (int nCount = 0; nCount < CAMERA_XNUM * CAMERA_YNUM; nCount++)
 		{
@@ -470,8 +470,8 @@ void CCamera::Game(int nNumber)
 		return;
 	}
 
-	m_camera[nNumber].posV = D3DXVECTOR3(0.0f, 120.0f, -300.0f);
-	m_camera[nNumber].posR = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
-	m_camera[nNumber].fDistance = sqrtf((m_camera[nNumber].posR.x - m_camera[nNumber].posV.x) * (m_camera[nNumber].posR.x - m_camera[nNumber].posV.x) + (m_camera[nNumber].posR.y - m_camera[nNumber].posV.y) * (m_camera[nNumber].posR.y - m_camera[nNumber].posV.y) + (m_camera[nNumber].posR.z - m_camera[nNumber].posV.z) * (m_camera[nNumber].posR.z - m_camera[nNumber].posV.z));
-	m_camera[nNumber].fDistanceMax = CAMERA_DISTANCE_MAX;
+	m_camera[idx].posV = D3DXVECTOR3(0.0f, 120.0f, -300.0f);
+	m_camera[idx].posR = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
+	m_camera[idx].fDistance = sqrtf((m_camera[idx].posR.x - m_camera[idx].posV.x) * (m_camera[idx].posR.x - m_camera[idx].posV.x) + (m_camera[idx].posR.y - m_camera[idx].posV.y) * (m_camera[idx].posR.y - m_camera[idx].posV.y) + (m_camera[idx].posR.z - m_camera[idx].posV.z) * (m_camera[idx].posR.z - m_camera[idx].posV.z));
+	m_camera[idx].fDistanceMax = CAMERA_DISTANCE_MAX;
 }

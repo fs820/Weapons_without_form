@@ -16,13 +16,13 @@ class CDebugProc final
 // 公開
 public:
 	// 表示切替
-	using MODE = enum
+	enum class MODE
 	{
-		STATIC = 0,
-		WINDOW,
-		SYSTEM,
-		OBJECT,
-		MODE_MAX
+		Static,
+		Window,
+		System,
+		Object,
+		Max
 	};
 
 	CDebugProc() = delete;
@@ -38,12 +38,12 @@ public:
 	static void SetDebugOp(UINT flag) { m_flag = flag; }
 
 	static void ToggleDebugDraw(void) { m_bDraw = !m_bDraw; };
-	static void ChangeDrawMode(void) { m_drawMode = MODE((m_drawMode + 1) % MODE_MAX); };
+	static void ChangeDrawMode(void) { m_drawMode = MODE((Index(m_drawMode) + 1) % Index(MODE::Max)); };
 
 // 非公開
 private:
 	static LPD3DXFONT m_pFont;        // フォントポインタ
-	static string m_sDebug[MODE_MAX]; // 表示文字列
+	static string m_sDebug[Index(MODE::Max)]; // 表示文字列
 	static D3DXCOLOR m_color;         // 文字色
 	static UINT m_flag;               // DrawText設定
 	static bool m_bDraw;              // 表示切替

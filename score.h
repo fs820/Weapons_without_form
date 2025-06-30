@@ -19,7 +19,7 @@ class CScore : public CObject
 public:
 	CScore() : m_apNumber{}, m_digits{}, m_space{}, m_nScore{} {}
 	CScore(size_t digits, float space, int priority) : CObject(priority), m_apNumber{}, m_digits(digits), m_space(space), m_nScore{} {}
-	~CScore() = default;
+	virtual ~CScore() = default;
 
 	static CScore* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, size_t digits = 5, float space = 0.05f, int priority = 3);
 	static CScore* Create(Transform transform, size_t digits = 5, float space = 0.05f, int priority = 3);

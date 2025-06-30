@@ -19,7 +19,7 @@ class CObjectBillboard : public CObject
 public:
 	CObjectBillboard() : m_pVtxBuff{}, m_mtxWorld{} {}
 	CObjectBillboard(int priority) : CObject(priority), m_pVtxBuff{}, m_mtxWorld{} {}
-	~CObjectBillboard() = default;
+	virtual ~CObjectBillboard() = default;
 
 	static CObjectBillboard* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority = 3);
 	static CObjectBillboard* Create(Transform transform, TYPE type, int priority = 3);

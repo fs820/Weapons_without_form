@@ -19,18 +19,18 @@
 //---------------------------------------
 
 // 静的メンバ変数
-LPDIRECT3DTEXTURE9 CBullet::m_apTexture[TYPE_MAX] = { nullptr }; // 共有テクスチャのポインタ
-D3DXVECTOR2 CBullet::m_aImageSize[TYPE_MAX] = {};             // テクスチャサイズ
+LPDIRECT3DTEXTURE9 CBullet::m_apTexture[Index(TYPE::Max)] = {nullptr}; // 共有テクスチャのポインタ
+D3DXVECTOR2 CBullet::m_aImageSize[Index(TYPE::Max)] = {};             // テクスチャサイズ
 
 //------------------------------
 // ソース読み込み
 //------------------------------
-HRESULT CBullet::Load(const string_view sTexturePass[TYPE_MAX])
+HRESULT CBullet::Load(const string_view sTexturePass[Index(TYPE::Max)])
 {
 	LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer().GetDevice();
 
 	// テクスチャ
-	for (size_t cntTex = 0; cntTex < TYPE_MAX; cntTex++)
+	for (size_t cntTex = 0; cntTex < Index(TYPE::Max); cntTex++)
 	{
 		D3DXIMAGE_INFO imageInfo = {};
 		if (FAILED(D3DXGetImageInfoFromFile
@@ -64,7 +64,7 @@ HRESULT CBullet::Load(const string_view sTexturePass[TYPE_MAX])
 void CBullet::Unload(void)
 {
 	// テクスチャ
-	for (size_t cntTex = 0; cntTex < TYPE_MAX; cntTex++)
+	for (size_t cntTex = 0; cntTex < Index(TYPE::Max); cntTex++)
 	{
 		if (m_apTexture[cntTex] != nullptr)
 		{
@@ -86,7 +86,7 @@ CBullet* CBullet::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, fl
 		return nullptr;
 	}
 
-	D3DXVECTOR3 imageSize = D3DXVECTOR3(m_aImageSize[type].x, m_aImageSize[type].y, 0.0f); // テクスチャサイズの取得
+	D3DXVECTOR3 imageSize = D3DXVECTOR3(m_aImageSize[Index(type)].x, m_aImageSize[Index(type)].y, 0.0f); // テクスチャサイズの取得
 	pBullet->SetSize(imageSize); // テクスチャサイズの設定
 
 	// 初期化
@@ -105,9 +105,9 @@ CBullet* CBullet::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, fl
 //------------------------------
 HRESULT CBullet::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float fSpeed, TYPE type)
 {
-	CObjectBillboard::Init(pos, rot, scale, BULLET); // 親の初期化
+	CObjectBillboard::Init(pos, rot, scale, CObject::TYPE::Bullet); // 親の初期化
 
-	IsCollision(true); // 当たり判定をする
+	SetCollision(true); // 当たり判定をする
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
@@ -171,7 +171,7 @@ void CBullet::Update(void)
 	{// ライフが0以下ならば爆発して削除
 		Transform transform = GetTransform();
 		CParticle::Create(transform.pos, transform.rot, transform.scale, 5);
-		Release();
+		SetRelease(true);
 		return;
 	}
 
@@ -193,7 +193,7 @@ void CBullet::Update(void)
 	transform = GetTransform(); // 変形情報の取得
 	if (transform.pos.x < 0.0f || transform.pos.x>1.0f || transform.pos.y < 0.0f || transform.pos.y>1.0f)
 	{
-		Release();
+		SetRelease(true);
 		return;
 	}
 
@@ -261,11 +261,11 @@ void CBullet::Draw(void)
 void CBullet::OnCollision(const CObject& other)
 {
 	CObject::TYPE Type = other.GetType();
-	if ((m_type == CBullet::PLAYER && Type == CObject::ENEMY) || (m_type == CBullet::ENEMY && Type == CObject::PLAYER))
+	if ((m_type == TYPE::Player && Type == CObject::TYPE::Enemy) || (m_type == TYPE::Enemy && Type == CObject::TYPE::Player))
 	{// 当たった場合
 		Hit(); // 敵に当たった処理
 
-		CDebugProc::Print(CDebugProc::OBJECT, "BulletHit 撃った人:%d", m_type);
-		CDebugProc::Print(CDebugProc::OBJECT, "BulletHit 当たった人:%d", Type);
+		CDebugProc::Print(CDebugProc::MODE::Object, "BulletHit 撃った人:%d", m_type);
+		CDebugProc::Print(CDebugProc::MODE::Object, "BulletHit 当たった人:%d", Type);
 	}
 }

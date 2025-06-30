@@ -76,7 +76,7 @@ HRESULT CBg::Init(void)
 {
 	CRenderer renderer = CManager::GetRenderer();
 
-	CObject::Init(BACKGROUND);
+	CObject::Init(TYPE::BackGround);
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
@@ -88,7 +88,7 @@ HRESULT CBg::Init(void)
 	// 背景サイズの取得
 	for (size_t cntTex = 0; cntTex < MAX_TEXTURE; cntTex++)
 	{
-		m_pBg[cntTex] = CObject2D::Create(CTextureManager::GetInstance().GetTexture(textureIdx[cntTex]), D3DXVECTOR3(screenSize.x * 0.5f, screenSize.y * 0.5f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(1.0f, 1.0f, 1.0f), BACKGROUND, GetPriority());
+		m_pBg[cntTex] = CObject2D::Create(CTextureManager::GetInstance().GetTexture(textureIdx[cntTex]), D3DXVECTOR3(screenSize.x * 0.5f, screenSize.y * 0.5f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(1.0f, 1.0f, 1.0f), TYPE::BackGround, GetPriority());
 
 		D3DXVECTOR2 screenSizeRatio = D3DXVECTOR2(screenSize.x / CTextureManager::GetInstance().GetSize(textureIdx[cntTex]).x, screenSize.y / CTextureManager::GetInstance().GetSize(textureIdx[cntTex]).y);
 		if (screenSizeRatio.x > screenSizeRatio.y)

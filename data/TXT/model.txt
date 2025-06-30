@@ -1,0 +1,20 @@
+#####################
+#
+# Model
+#
+#####################
+
+XModel = data/MODEL/House000.x                           # Test
+
+# Player
+PBody = data\\MODEL\\Playermodel\\00_Player_Body.x        # 胴
+PHead = data\\MODEL\\Playermodel\\01_Player_Head.x        # 頭
+PRArm = data\\MODEL\\Playermodel\\02_Player_RightArm.x    # 右腕
+PRHand = data\\MODEL\\Playermodel\\03_Player_RightHand.x  # 右手
+PLArm = data\\MODEL\\Playermodel\\04_Player_LeftArm.x     # 左腕
+PLHand = data\\MODEL\\Playermodel\\05_Player_LeftHand.x   # 左手
+PRLeg = data\\MODEL\\Playermodel\\06_Player_RightLeg.x    # 右脚
+PRFoot = data\\MODEL\\Playermodel\\07_Player_RightFoot.x  # 右足
+PLLeg = data\\MODEL\\Playermodel\\08_Player_LeftLeg.x     # 左脚
+PLFoot = data\\MODEL\\Playermodel\\09_Player_LeftFoot.x   # 左足
+PHat = data\\MODEL\\Playermodel\\10_Player_Hat.x          # 帽子

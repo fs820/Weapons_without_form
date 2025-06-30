@@ -7,6 +7,7 @@
 #pragma once
 #include "main.h"
 #include "object.h"
+#include "manager.h"
 
 using namespace DirectX3D; // DirectX3D名前空間の使用
 
@@ -19,7 +20,7 @@ class CObjectX : public CObject
 public:
 	CObjectX() : m_mtxWorld{} {}
 	CObjectX(int priority) : CObject(priority), m_mtxWorld{} {}
-	~CObjectX() = default;
+	virtual ~CObjectX() = default;
 
 	static CObjectX* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority = 3);
 	static CObjectX* Create(Transform transform, TYPE type, int priority = 3);
@@ -34,7 +35,7 @@ public:
 private:
 	void OnCollision(const CObject& other) override {};
 
-	static size_t m_modelIdx;           // モデル番号
+	static Index m_modelIdx; // モデルインデックス
 
-	D3DXMATRIX m_mtxWorld;              // マトリックス
+	D3DXMATRIX m_mtxWorld;                // マトリックス
 };

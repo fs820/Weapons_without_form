@@ -5,6 +5,7 @@
 //
 //------------------------------------------
 #include "objectX.h"
+#include "object3D.h"
 #include "renderer.h"
 #include "manager.h"
 #include "texture.h"
@@ -16,7 +17,7 @@
 //
 //---------------------------------------
 
-size_t CObjectX::m_modelIdx{};           // モデル番号
+Index CObjectX::m_modelIdx{};           // モデルタグ
 
 //------------------------------
 // 生成
@@ -30,9 +31,7 @@ CObjectX* CObjectX::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, 
 		return nullptr;
 	}
 
-	//m_modelIdx = CModelManager::GetInstance().Register("data\\MODEL\\Xeros.x");
-
-	m_modelIdx = CModelManager::PLAYER;
+	m_modelIdx = CModelManager::GetInstance().Create(Index(MODELTAG::Test));
 
 	// 初期化
 	if (FAILED(pObjectX->Init(pos, rot, scale, type)))
@@ -57,9 +56,7 @@ CObjectX* CObjectX::Create(Transform transform, TYPE type, int priority)
 		return nullptr;
 	}
 
-	//m_modelIdx = CModelManager::GetInstance().Register("data\\MODEL\\Xeros.x");
-
-	m_modelIdx = CModelManager::PLAYER;
+	m_modelIdx = CModelManager::GetInstance().Create(Index(MODELTAG::Test));
 
 	// 初期化
 	if (FAILED(pObjectX->Init(transform, type)))
@@ -111,7 +108,7 @@ void CObjectX::Uninit(void)
 //------------------------------
 void CObjectX::Update(void)
 {
-
+	SetPosition(D3DXVECTOR3(GetPosition().x, CManager::Get3D().GetHeight(GetPosition()), GetPosition().z)); // Transformの更新
 }
 
 //------------------------------

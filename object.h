@@ -8,6 +8,8 @@
 #include "main.h"
 #include "renderer.h"
 
+using namespace DirectX; // DirectX名前空間の使用
+
 //---------------------
 // オブジェクトクラス
 //---------------------
@@ -16,87 +18,81 @@ class CObject
 // 公開
 public:
 	// タイプ
-	using TYPE = enum
+	enum class TYPE : Index
 	{
-		NONE = 0,   // 無し
-		BACKGROUND, // 背景
-		PLAYER,     // プレイヤー
-		ENEMY,      // 敵
-		BULLET,     // 弾
-		EXPLOSION,  // 爆発
-		EFFECT,     // エフェクト
-		SCORE,      // スコア
-		TYPE_MAX    // 最大数
+		None,       // 無し
+		BackGround, // 背景
+		Player,     // プレイヤー
+		Enemy,      // 敵
+		Bullet,     // 弾
+		Explosion,  // 爆発
+		Effect,     // エフェクト
+		Score,      // スコア
+		Max         // 最大数
 	};
 
-	// トランスフォーム
-	using Transform = struct
-	{
-		D3DXVECTOR3 pos;   // 位置
-		D3DXVECTOR3 rot;   // 回転
-		D3DXVECTOR3 scale; // スケール
-	};
-
-	CObject(int priority = 3); // デフォルト引数によりデフォルトコンストラクタを兼用している
+	CObject(int priority = 3) :m_Priority(priority), m_ID(INVALID_ID), m_type{}, m_transform{}, m_bCollision{}, m_bRelease{} {} // デフォルト引数によりデフォルトコンストラクタを兼用している
 	virtual ~CObject() = default;
 
-	static void ReleaseAll(void);
 	static void UpdateAll(void);
 	static void DrawAll(void);
+	static void ReleaseAll(void);
+
+	static size_t GetObjectAll(void) { return m_nAll; }
 
 	virtual void Uninit(void) = 0;
 	virtual void Update(void) = 0;
 	virtual void Draw(void) = 0;
 
-	int GetPriority(void) const { return m_Priority; }
-	int GetID(void) const { return m_nID; }
+	Index GetPriority(void) const { return m_Priority; }
+	Index GetID(void) const { return m_ID; }
 	TYPE GetType(void) const { return m_type; }
 
 	Transform GetTransform(void) const { return m_transform; }
-	D3DXVECTOR3 GetPosition(void) const { return m_transform.pos; }
-	D3DXVECTOR3 GetRotation(void) const { return m_transform.rot; }
-	D3DXVECTOR3 GetScale(void) const { return m_transform.scale; }
+	Vector3 GetPosition(void) const { return m_transform.pos; }
+	Vector3 GetRotation(void) const { return m_transform.rot; }
+	Vector3 GetScale(void) const { return m_transform.scale; }
 
-	D3DXVECTOR3 GetSize(void) const { return m_size; }
+	Vector3 GetSize(void) const { return m_size; }
 
 	void SetTransform(const Transform transform) { m_transform = transform; }
-	void SetPosition(const D3DXVECTOR3 pos) { m_transform.pos = pos; }
-	void SetRotation(const D3DXVECTOR3 rot) { m_transform.rot = rot; }
-	void SetScale(const D3DXVECTOR3 scale) { m_transform.scale = scale; }
+	void SetPosition(const Vector3 pos) { m_transform.pos = pos; }
+	void SetRotation(const Vector3 rot) { m_transform.rot = rot; }
+	void SetScale(const Vector3 scale) { m_transform.scale = scale; }
 
-	void SetSize(const D3DXVECTOR3 size) { m_size = size; }
+	void SetSize(const Vector3 size) { m_size = size; }
 
 	void AddTransform(const Transform transform) { m_transform.pos += transform.pos; m_transform.rot += transform.rot; m_transform.scale += transform.scale; }
-	void AddPosition(const D3DXVECTOR3 pos) { m_transform.pos += pos; }
-	void AddRotation(const D3DXVECTOR3 rot) { m_transform.rot += rot; }
-	void AddScale(const D3DXVECTOR3 scale) { m_transform.scale += scale; }
+	void AddPosition(const Vector3 pos) { m_transform.pos += pos; }
+	void AddRotation(const Vector3 rot) { m_transform.rot += rot; }
+	void AddScale(const Vector3 scale) { m_transform.scale += scale; }
 
-	void IsCollision(const bool bCollision) { m_bCollision = bCollision; }
+	void SetCollision(const bool bCollision) { m_bCollision = bCollision; }
 	bool IsCollision(void) const { return m_bCollision; }
+
+	void SetRelease(const bool bRelease) { m_bRelease = bRelease; }
+	bool IsRelease(void) const { return m_bRelease; }
 
 // 家族公開
 protected:
 	virtual void OnCollision(const CObject& other) = 0;
 
 	void Init(TYPE type);
-	void Release(void);
 
 // 非公開
 private:
+	static void Release(CObject* pObject);
 	static void CallCollision(void);
 	static bool CallCollisionHelper(const CObject& HostObject, const CObject& GuestObject);
 
-	static constexpr size_t MAX__PRIORITY = 8;                       // オブジェクトの描画順位数
-	static constexpr size_t MAX_OBJECT = 5096;                       // オブジェクトのそれぞれの描画順位での最大数
-	static constexpr size_t ALL_OBJECT = MAX__PRIORITY * MAX_OBJECT; // オブジェクトの最大数
+	static array<vector<CObject*>, 8> m_apObject;   // オブジェクトのポインタ配列
+	static int m_nAll;                              // オブジェクトの数
 
-	static CObject* m_apObject[MAX__PRIORITY][MAX_OBJECT];   // オブジェクトのポインタ配列
-	static int m_nAll;                                       // オブジェクトの数
-
-	int m_Priority;          // 描画順位
-	int m_nID;               // オブジェクトのID
+	Index m_Priority;        // 描画順位
+	Index m_ID;              // オブジェクトのID
 	TYPE m_type;             // オブジェクトの種類
 	Transform m_transform;   // 位置・回転・スケール
-	D3DXVECTOR3 m_size;      // サイズ（当たり判定用）
+	Vector3 m_size;          // サイズ（当たり判定用）
 	bool m_bCollision;       // あたり判定の有無
+	bool m_bRelease;         // 破棄フラグ
 };

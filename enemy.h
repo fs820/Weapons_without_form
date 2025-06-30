@@ -15,28 +15,28 @@ class CEnemy final : public CObjectBillboard
 {
 // 公開
 public:
-	using TYPE = enum
+	enum class TYPE
 	{
-		DEFAULT = 0, // デフォルト
-		EXTRA,       // 追加
-		TYPE_MAX     // 最大
+		Default, // デフォルト
+		Extra,   // 追加
+		Max      // 最大
 	};
 
 	// 状態管理
-	using STATE = enum
+	enum class STATE
 	{
-		NONE = 0, // 無
-		NORMAL,   // 通常
-		DAMAGE,   // ダメージ
-		DEATH,    // 死
-		STATE_MAX // 状態数
+		None,   // 無
+		Normal, // 通常
+		Damage, // ダメージ
+		Death,  // 死
+		Max     // 状態数
 	};
 
 	CEnemy() :m_state{}, m_StateTime{}, m_AttackTime{}, m_fSpeed{}, m_type{}, m_nLife{} { m_nNumAll++; }
 	CEnemy(int priority) : CObjectBillboard(priority), m_state{}, m_StateTime{}, m_AttackTime{}, m_fSpeed{}, m_type{}, m_nLife{} { m_nNumAll++; }
 	~CEnemy() { m_nNumAll--; };
 
-	static HRESULT Load(const string_view sTexturePass[TYPE_MAX]);
+	static HRESULT Load(const string_view sTexturePass[Index(TYPE::Max)]);
 	static void Unload(void);
 	static CEnemy* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float fSpeed, TYPE type, int priority = 3);
 
@@ -61,8 +61,8 @@ private:
 	static constexpr float DEATH_TIME = 0.1f;  // 死時間
 	static constexpr float ATTACK_TIME = 2.0f; // 攻撃間隔
 
-	static LPDIRECT3DTEXTURE9 m_apTexture[TYPE_MAX]; // 共有テクスチャのポインタ
-	static D3DXVECTOR2 m_aImageSize[TYPE_MAX];       // テクスチャサイズ
+	static LPDIRECT3DTEXTURE9 m_apTexture[Index(TYPE::Max)]; // 共有テクスチャのポインタ
+	static D3DXVECTOR2 m_aImageSize[Index(TYPE::Max)];       // テクスチャサイズ
 
 	static int m_nNumAll;                   // 出現数
 

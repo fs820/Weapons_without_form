@@ -23,19 +23,19 @@
 //---------------------------------------
 
 // 静的メンバ変数
-LPDIRECT3DTEXTURE9 CEnemy::m_apTexture[TYPE_MAX] = { nullptr }; // 共有テクスチャのポインタ
-D3DXVECTOR2 CEnemy::m_aImageSize[TYPE_MAX] = {};             // テクスチャサイズ
+LPDIRECT3DTEXTURE9 CEnemy::m_apTexture[Index(TYPE::Max)] = {nullptr}; // 共有テクスチャのポインタ
+D3DXVECTOR2 CEnemy::m_aImageSize[Index(TYPE::Max)] = {};             // テクスチャサイズ
 int CEnemy::m_nNumAll = 0;                                   // 出現数
 
 //------------------------------
 // ソース読み込み
 //------------------------------
-HRESULT CEnemy::Load(const string_view sTexturePass[TYPE_MAX])
+HRESULT CEnemy::Load(const string_view sTexturePass[Index(TYPE::Max)])
 {
 	LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer().GetDevice();
 
 	// テクスチャ
-	for (size_t cntTex = 0; cntTex < TYPE_MAX; cntTex++)
+	for (size_t cntTex = 0; cntTex < Index(TYPE::Max); cntTex++)
 	{
 		D3DXIMAGE_INFO imageInfo = {};
 		if (FAILED(D3DXGetImageInfoFromFile
@@ -68,7 +68,7 @@ HRESULT CEnemy::Load(const string_view sTexturePass[TYPE_MAX])
 void CEnemy::Unload(void)
 {
 	// テクスチャ
-	for (size_t cntTex = 0; cntTex < TYPE_MAX; cntTex++)
+	for (size_t cntTex = 0; cntTex < Index(TYPE::Max); cntTex++)
 	{
 		if (m_apTexture[cntTex] != nullptr)
 		{
@@ -90,7 +90,7 @@ CEnemy* CEnemy::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, floa
 		return nullptr;
 	}
 
-	pBullet->SetSize(D3DXVECTOR3(m_aImageSize[type].x, m_aImageSize[type].y, 0.0f)); // サイズの設定
+	pBullet->SetSize(D3DXVECTOR3(m_aImageSize[Index(type)].x, m_aImageSize[Index(type)].y, 0.0f)); // サイズの設定
 
 	// 初期化
 	if (FAILED(pBullet->Init(pos, rot, scale, fSpeed, type)))
@@ -108,9 +108,9 @@ CEnemy* CEnemy::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, floa
 //------------------------------
 HRESULT CEnemy::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float fSpeed, TYPE type)
 {
-	CObjectBillboard::Init(pos, rot, scale, ENEMY); // 親の初期化
+	CObjectBillboard::Init(pos, rot, scale, CObject::TYPE::Enemy); // 親の初期化
 
-	IsCollision(true); // 当たり判定をする	
+	SetCollision(true); // 当たり判定をする	
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
@@ -120,7 +120,7 @@ HRESULT CEnemy::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float 
 	}
 
 	m_nLife = LIFE;                // ライフの初期化
-	m_state = NORMAL;              // 初期化
+	m_state = STATE::Normal;       // 初期化
 	m_StateTime = 0.0f;  // 出現時間
 	m_AttackTime = 0.0f; // 攻撃時間
 
@@ -206,7 +206,7 @@ void CEnemy::Update(void)
 
 		pVtx[cntVtx].pos = resultPos[cntVtx];
 		pVtx[cntVtx].nor = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
-		pVtx[cntVtx].col = m_state == DAMAGE ? RED : WHITE; // ダメージ状態は赤
+		pVtx[cntVtx].col = m_state == STATE::Damage ? RED : WHITE; // ダメージ状態は赤
 		pVtx[cntVtx].tex = D3DXVECTOR2((float)(cntVtx % 2) * 1.0f, (float)(cntVtx / 2) * 1.0f);
 	}
 
@@ -215,39 +215,39 @@ void CEnemy::Update(void)
 	// 状態管理
 	switch (m_state)
 	{
-	case NONE:
+	case STATE::None:
 		break;
-	case NORMAL:
+	case STATE::Normal:
 		if ((m_AttackTime += CMain::GetDeltaTimeGameSpeed()) >= ATTACK_TIME)
 		{// 一定時間経過
 			D3DXVECTOR3 playerPos{};
 			D3DXVECTOR3 space = playerPos - GetPosition();
 			float angle = atan2f(space.x, space.y);
 			CMath::NormalizeAngle(&angle);
-			CBullet::Create(transform.pos, D3DXVECTOR3(0.0f, 0.0f, angle), transform.scale, CMath::Random(0.05f, 0.5f), CBullet::ENEMY, 2);
+			CBullet::Create(transform.pos, D3DXVECTOR3(0.0f, 0.0f, angle), transform.scale, CMath::Random(0.05f, 0.5f), CBullet::TYPE::Enemy, 2);
 
 			m_AttackTime = 0.0f; // 戻す
 		}
 		break;
-	case DAMAGE:
+	case STATE::Damage:
 		if ((m_StateTime += CMain::GetDeltaTimeGameSpeed()) >= DAMAGE_TIME)
 		{// 一定時間経過
-			m_state = NORMAL; // 通常状態
+			m_state = STATE::Normal; // 通常状態
 			m_StateTime = 0.0f; // 戻す
 		}
 		break;
-	case DEATH:
+	case STATE::Death:
 		if ((m_StateTime += CMain::GetDeltaTimeGameSpeed()) >= DEATH_TIME)
 		{// 一定時間経過
-			Release();
+			SetRelease(true);
 			return;
 		}
 		break;
 	}
 
-	CDebugProc::Print(CDebugProc::OBJECT, "Enemy%d:%d", GetID(), m_state);
-	CDebugProc::Print(CDebugProc::OBJECT, "Enemy%d 状態カウンター:%f", GetID(), m_StateTime);
-	CDebugProc::Print(CDebugProc::OBJECT, "Enemy%d 攻撃カウンター:%f", GetID(), m_AttackTime);
+	CDebugProc::Print(CDebugProc::MODE::Object, "Enemy%d:%d", GetID(), m_state);
+	CDebugProc::Print(CDebugProc::MODE::Object, "Enemy%d 状態カウンター:%f", GetID(), m_StateTime);
+	CDebugProc::Print(CDebugProc::MODE::Object, "Enemy%d 攻撃カウンター:%f", GetID(), m_AttackTime);
 }
 
 //------------------------------
@@ -271,21 +271,21 @@ void CEnemy::OnCollision(const CObject& other)
 //--------------------------
 void CEnemy::Hit(int damage)
 {
-	if (m_state == NORMAL || m_state == DAMAGE)
+	if (m_state == STATE::Normal || m_state == STATE::Damage)
 	{// 無敵時間でない
 		m_nLife -= damage; // ダメージ
 		if (m_nLife <= 0)
 		{// 体力がなくなった
-			m_state = DEATH; // 死
+			m_state = STATE::Death; // 死
 
 			Transform transform = GetTransform();
-			CExplosion::Create(transform.pos, transform.rot, transform.scale * 50.0f, CMath::Random(CExplosion::DEFAULT, CExplosion::EXTRA), 4); // 爆発エフェクトを生成
+			CExplosion::Create(transform.pos, transform.rot, transform.scale * 50.0f, CMath::Random(CExplosion::TYPE::Defalt, CExplosion::TYPE::Extra), 4); // 爆発エフェクトを生成
 
 			CManager::GetScore()->AddScore(10);
 		}
 		else
 		{
-			m_state = DAMAGE; // ダメージ
+			m_state = STATE::Damage; // ダメージ
 			CManager::GetScore()->AddScore(1);
 		}
 		m_StateTime = 0.0f; // 戻す

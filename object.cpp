@@ -6,52 +6,14 @@
 //------------------------------------------
 #include "object.h"
 #include "manager.h"
-#include "camera.h"
 
 //---------------------------------------
 //
 // オブジェクト基本クラス
 //
 //---------------------------------------
-CObject* CObject::m_apObject[MAX__PRIORITY][MAX_OBJECT] = {};
+array<vector<CObject*>, 8> CObject::m_apObject{};   // オブジェクトのポインタ配列
 int CObject::m_nAll = 0;
-
-//------------------------------
-// コンストラクタ (描画順)
-//------------------------------
-CObject::CObject(int priority) :m_Priority(priority), m_nID(-1), m_type{}, m_transform{}, m_bCollision{}
-{
-	// オブジェクト配列に自分を登録する
-	for (size_t cntObject = 0; cntObject < MAX_OBJECT; cntObject++)
-	{
-		if (m_apObject[m_Priority][cntObject] == nullptr)
-		{
-			m_apObject[m_Priority][cntObject] = this;
-			m_nID = cntObject;
-			m_nAll++;
-			break;
-		}
-	}
-}
-
-//------------------------------
-// 全破棄
-//------------------------------
-void CObject::ReleaseAll(void)
-{
-	for (size_t cntPriority = 0; cntPriority < MAX__PRIORITY; cntPriority++)
-	{
-		for (size_t cntObject = 0; cntObject < MAX_OBJECT; cntObject++)
-		{
-			if (m_apObject[cntPriority][cntObject] != nullptr)
-			{
-				m_apObject[cntPriority][cntObject]->Uninit();
-				delete m_apObject[cntPriority][cntObject];
-				m_apObject[cntPriority][cntObject] = nullptr;
-			}
-		}
-	}
-}
 
 //------------------------------
 // 全更新
@@ -60,14 +22,33 @@ void CObject::UpdateAll(void)
 {
 	CallCollision(); // 衝突判定を呼び出す
 
-	for (size_t cntPriority = 0; cntPriority < MAX__PRIORITY; cntPriority++)
-	{
-		for (size_t cntObject = 0; cntObject < MAX_OBJECT; cntObject++)
-		{
-			if (m_apObject[cntPriority][cntObject] != nullptr)
-			{
-				m_apObject[cntPriority][cntObject]->Update();
+	for (auto& priority : m_apObject)
+	{// priorityを回す
+		for (Index cntObject = 0; cntObject < priority.size();)
+		{// priority内を回す
+			if (priority[cntObject] != nullptr)
+			{// オブジェクトがある
+				priority[cntObject]->Update(); // オブジェクトの更新
+
+				if (priority[cntObject]->IsRelease())
+				{// 削除
+					Release(priority[cntObject]); // オブジェクトを破棄
+					continue;                     // 削除時はカウント動かさない
+				}
 			}
+			else
+			{// オブジェクトがない
+				do
+				{// nullでない要素が来るまで
+					SwapRemove(priority, cntObject); // オブジェクトポインタを配列から除去
+					if (priority[cntObject] != nullptr)
+					{// 存在する
+						priority[cntObject]->m_ID = cntObject; // インデックス更新
+						break;
+					}
+				} while (true);
+			}
+			++cntObject; // カウント進める
 		}
 	}
 }
@@ -77,18 +58,32 @@ void CObject::UpdateAll(void)
 //------------------------------
 void CObject::DrawAll(void)
 {
-	CManager::GetCamera()->Set();
-
-	for (size_t cntPriority = 0; cntPriority < MAX__PRIORITY; cntPriority++)
-	{
-		for (size_t cntObject = 0; cntObject < MAX_OBJECT; cntObject++)
-		{
-			if (m_apObject[cntPriority][cntObject] != nullptr)
-			{
-				m_apObject[cntPriority][cntObject]->Draw();
+	for (auto& priority : m_apObject)
+	{// priority配列
+		for (auto& pObject : priority)
+		{// オブジェクト配列
+			if (pObject != nullptr)
+			{// 存在する
+				pObject->Draw();
 			}
 		}
 	}
+}
+
+//------------------------------
+// 全破棄
+//------------------------------
+void CObject::ReleaseAll(void)
+{
+	for (auto& priority : m_apObject)
+	{// priority配列
+		for (auto& pObject : priority)
+		{// オブジェクト配列
+			SAFE_UNINIT(pObject); // オブジェクトのアンイニットを呼び出す
+		}
+	}
+	m_apObject.fill(vector<CObject*>()); // 全てのオブジェクトポインタをクリア
+	m_nAll = 0;                          // 全オブジェクト数をリセット
 }
 
 //------------------------------
@@ -96,6 +91,11 @@ void CObject::DrawAll(void)
 //------------------------------
 void CObject::Init(TYPE type)
 {
+	// オブジェクト配列に自分を登録する
+	m_apObject[m_Priority].push_back(this);
+	m_ID = m_apObject[m_Priority].size() - 1;
+	m_nAll++;
+
 	m_transform = {}; // トランスフォーム初期化
 	m_type = type;    // オブジェクトの種類を設定
 }
@@ -103,16 +103,21 @@ void CObject::Init(TYPE type)
 //------------------------------
 // 破棄
 //------------------------------
-void CObject::Release(void)
+void CObject::Release(CObject* pObject)
 {
-	if (m_apObject[m_Priority][m_nID] != nullptr)
-	{
-		int Priority = m_Priority;
-		int nID = m_nID;
-		m_apObject[Priority][nID]->Uninit();
-		delete m_apObject[Priority][nID];
-		m_apObject[Priority][nID] = nullptr;
-	}
+	if (pObject == nullptr) return;                                 // nullチェック
+	Index priority = pObject->GetPriority(), id = pObject->GetID(); // 配列から削除するための情報を削除前にもらう
+	SAFE_UNINIT(pObject);                                           // オブジェクトを削除
+	do
+	{// nullでない要素が来るまで
+		SwapRemove(m_apObject[priority], id); // オブジェクトポインタを配列から除去
+		if (m_apObject[priority][id] != nullptr)
+		{// 存在する
+			m_apObject[priority][id]->m_ID = id; // インデックス更新
+			break;
+		}
+	} while (true);
+	--m_nAll; // オブジェクト数を減らす
 }
 
 //------------------------------
@@ -120,35 +125,37 @@ void CObject::Release(void)
 //------------------------------
 void CObject::CallCollision(void)
 {
-	for (size_t cntHostObject = 0; cntHostObject < ALL_OBJECT; cntHostObject++)
+	for (Index hostPri = 0; hostPri < m_apObject.size(); ++hostPri)
 	{
-		// プライオリティとインデックスの番号を算出
-		size_t HostPri = cntHostObject / MAX_OBJECT;
-		size_t HostIdx = cntHostObject % MAX_OBJECT;
-
-		if (m_apObject[HostPri][HostIdx] == nullptr || !m_apObject[HostPri][HostIdx]->m_bCollision || m_apObject[HostPri][HostIdx]->m_type == TYPE::NONE)
-		{// オブジェクトが存在しないまたは当たり判定をしないまたはTYPEがNONEの場合はスキップ
-			continue;
-		}
-
-		for (size_t cntGuestObject = cntHostObject + 1; cntGuestObject < ALL_OBJECT; cntGuestObject++)
+		auto& hostVec = m_apObject[hostPri];
+		for (Index hostIdx = 0; hostIdx < hostVec.size(); ++hostIdx)
 		{
-			// プライオリティとインデックスの番号を算出
-			size_t GuestPri = cntGuestObject / MAX_OBJECT;
-			size_t GuestIdx = cntGuestObject % MAX_OBJECT;
+			CObject* pHost = hostVec[hostIdx];
+			if (pHost == nullptr || !pHost->m_bCollision || pHost->m_type == TYPE::None) continue;
 
-			if (m_apObject[GuestPri][GuestIdx] == nullptr || !m_apObject[GuestPri][GuestIdx]->m_bCollision || m_apObject[GuestPri][GuestIdx]->m_type == TYPE::NONE)
-			{// オブジェクトが存在しないまたは当たり判定をしないまたはTYPEがNONEの場合はスキップ
-				continue;
-			}
+			// ゲストはホストの直後から全体を回す
+			for (Index guestPri = hostPri; guestPri < m_apObject.size(); ++guestPri)
+			{
+				auto& guestVec = m_apObject[guestPri];
 
-			if (CallCollisionHelper(*m_apObject[HostPri][HostIdx], *m_apObject[GuestPri][GuestIdx]))
-			{// 衝突している場合
-				m_apObject[HostPri][HostIdx]->OnCollision(*m_apObject[GuestPri][GuestIdx]); // ホストオブジェクトの衝突時の処理を呼び出す
+				// guestPri == hostPri のときはguestIdxをhostIdx + 1から開始
+				Index startGuestIdx = (guestPri == hostPri) ? hostIdx + 1 : 0;
 
-				if (m_apObject[HostPri][HostIdx] != nullptr)
-				{// 直前のOnCollisionの削除エラー回避
-					m_apObject[GuestPri][GuestIdx]->OnCollision(*m_apObject[HostPri][HostIdx]); // ゲストオブジェクトの衝突時の処理を呼び出す
+				for (Index guestIdx = startGuestIdx; guestIdx < guestVec.size(); ++guestIdx)
+				{
+					CObject* pGuest = guestVec[guestIdx];
+					if (pGuest == nullptr || !pGuest->m_bCollision || pGuest->m_type == TYPE::None) continue;
+
+					if (CallCollisionHelper(*pHost, *pGuest))
+					{
+						pHost->OnCollision(*pGuest);
+
+						// pHostがOnCollisionで破棄されていないか確認（nullptrチェック）
+						if (pHost != nullptr)
+						{
+							pGuest->OnCollision(*pHost);
+						}
+					}
 				}
 			}
 		}

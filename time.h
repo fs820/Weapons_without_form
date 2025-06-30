@@ -19,7 +19,7 @@ class CTime : public CObject
 public:
 	CTime() : m_apNumber{}, m_digits{}, m_space{}, m_fTime{}, m_count{} {}
 	CTime(size_t digits, float space, int priority) : CObject(priority), m_apNumber{}, m_digits(digits), m_space(space), m_fTime{}, m_count{} {}
-	~CTime() = default;
+	virtual ~CTime() = default;
 
 	static CTime* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, size_t digits = 5, float space = 0.05f, int priority = 3);
 	static CTime* Create(Transform transform, size_t digits = 5, float space = 0.05f, int priority = 3);

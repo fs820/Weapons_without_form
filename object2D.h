@@ -19,7 +19,7 @@ class CObject2D : public CObject
 public:
 	CObject2D() : m_pVtxBuff{} {}
 	CObject2D(int priority) : CObject(priority), m_pVtxBuff{} {}
-	~CObject2D() = default;
+	virtual ~CObject2D() = default;
 
 	static CObject2D* Create(LPDIRECT3DTEXTURE9 pTexture, D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority = 3);
 	static CObject2D* Create(LPDIRECT3DTEXTURE9 pTexture, Transform transform, TYPE type, int priority = 3);

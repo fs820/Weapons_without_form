@@ -404,14 +404,14 @@ void CSoundManager::Update(void)
 		{
 			if (m_apSound[label][cntSound] != nullptr)
 			{
-				CDebugProc::Print(CDebugProc::SYSTEM, "çƒê∂íÜ:%d,%d", label, cntSound);
+				CDebugProc::Print(CDebugProc::MODE::System, "çƒê∂íÜ:%d,%d", label, cntSound);
 				m_apSound[label][cntSound]->Update();
 
 				if (m_apSound[label][cntSound]->IsStop())
 				{
 					delete m_apSound[label][cntSound];
 					m_apSound[label][cntSound] = nullptr;
-					CDebugProc::Print(CDebugProc::SYSTEM, "í‚é~:%d,%d", label, cntSound);
+					CDebugProc::Print(CDebugProc::MODE::System, "í‚é~:%d,%d", label, cntSound);
 				}
 			}
 		}
@@ -438,7 +438,7 @@ size_t CSoundManager::Play(LABEL label, float volume)
 			if (m_apSound[label] != nullptr)
 			{
 				if (FAILED(m_apSound[label][cntSound]->Play(volume)))return static_cast<size_t>(-1);
-				CDebugProc::Print(CDebugProc::SYSTEM, "í‚é~:%d,%d", label, cntSound);
+				CDebugProc::Print(CDebugProc::MODE::System, "í‚é~:%d,%d", label, cntSound);
 				return cntSound;
 			}
 			else
