@@ -9,6 +9,7 @@
 #include "manager.h"
 #include "gui.h"
 #include "debug.h"
+#include "input.h"
 
 #include <ShellScalingApi.h>  // SetProcessDpiAwareness用
 #include <Shlwapi.h> // パス操作用 (PathRelativePathToなど)
@@ -54,12 +55,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hInstancePrev, _
 
 	//ウインドウクラスの登録
 	RegisterClassEx(&wcex);
-
-	//// DPIスケーリング対応
-	//if (FAILED(SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE)))
-	//{
-	//	SetProcessDPIAware();  // Windows 7 互換用
-	//}
 
 	//クライアント領域のサイズ調整
 	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
@@ -159,7 +154,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hInstancePrev, _
 			{// 更新停止状態でない
 				pManager->Update(); //更新処理
 			}
-			pManager->Draw();   //描画処理
+			if (FAILED(pManager->Draw())) { return E_FAIL; }   //描画処理
 		}
 	}
 
@@ -198,21 +193,15 @@ LRESULT CALLBACK CMain::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 		GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &rawInputSize, sizeof(RAWINPUTHEADER));
 
 		// メモリの確保
-		LPBYTE pData = new BYTE[rawInputSize];
-		if (pData == nullptr)
-		{// メモリ確保失敗
-			CDebugProc::Print(CDebugProc::MODE::System, "Error: Failed to allocate memory for raw input data!");
-			break;
-		}
+		vector<BYTE> data(rawInputSize);
 
-		if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, pData, &rawInputSize, sizeof(RAWINPUTHEADER)) == -1)
+		if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, data.data(), &rawInputSize, sizeof(RAWINPUTHEADER)) == -1)
 		{// データ取得失敗
 			CDebugProc::Print(CDebugProc::MODE::System, "Error: GetRawInputData failed!");
-			delete[] pData;
 			break;
 		}
 
-		RAWINPUT* pRawInput = reinterpret_cast<RAWINPUT*>(pData); // RAWINPUT型にする
+		RAWINPUT* pRawInput = reinterpret_cast<RAWINPUT*>(data.data()); // RAWINPUT型にする
 
 		if (pRawInput->header.dwType == RIM_TYPEKEYBOARD)
 		{// キーボードイベント
@@ -250,12 +239,12 @@ LRESULT CALLBACK CMain::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 		{// マウスイベント
 			CDebugProc::Print(CDebugProc::MODE::System, "--- Mouse WM_INPUT Received ---");
 		}
-		 else if (pRawInput->header.dwType == RIM_TYPEHID)
+		else if (pRawInput->header.dwType == RIM_TYPEHID)
 		{// HIDイベント
 			CDebugProc::Print(CDebugProc::MODE::System, "--- HID WM_INPUT Received ---");
 		}
 
-		delete[] pData; // 解放
+		CInputRawInput::AnalysisRawData(pRawInput); // ポインタをInput側に任せる
 		break;
 	}
 	case WM_SIZE:
@@ -318,7 +307,8 @@ LRESULT CALLBACK CMain::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 	case WM_DISPLAYCHANGE://ディスプレイの変更
 		break;
 	case WM_DEVICECHANGE:
-		// Inputの再取得
+		// Input登録
+		CMain::RegisterAllInputDevices();
 		break;
 	case WM_POWERBROADCAST:
 		break;

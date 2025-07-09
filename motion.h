@@ -65,26 +65,21 @@ namespace motion
 //-----------------------------------------
 class CMotion final
 {
-	// クラスusing
-	using Motion = motion::Motion;
-	using Data = motion::Data;
-	using Key = motion::Key;
-	using Parts = motion::Parts;
 // 公開
 public:
 	CMotion() : m_modelIndex{}, m_pMotion{}, m_pBlendMotion{}, m_data{} {}
 	~CMotion() = default;
 
 	void RegisterModel(const vector<Index> modelIndex) { m_modelIndex = modelIndex; };
-	void Set(const Motion* pMotion, bool bBlend, int blendFrame);
+	void Set(const motion::Motion* pMotion, bool bBlend, int blendFrame);
 	bool Update(void);
 
 // 非公開
 private:
-	vector<Index> m_modelIndex;   // 適応するモデルのインデックス(モデルクラス依存)
-	const Motion* m_pMotion;      // 今のモーション情報のポインタ
-	const Motion* m_pBlendMotion; // ブレンド先のモーション情報のポインタ
-	Data m_data;                  // モーションデータ
+	vector<Index> m_modelIndex;           // 適応するモデルのインデックス(モデルクラス依存)
+	const motion::Motion* m_pMotion;      // 今のモーション情報のポインタ
+	const motion::Motion* m_pBlendMotion; // ブレンド先のモーション情報のポインタ
+	motion::Data m_data;                  // モーションデータ
 };
 
 //----------------------------------------------
@@ -92,8 +87,6 @@ private:
 //----------------------------------------------
 class CMotionManager final
 {
-	// クラスusing
-	using Source = motion::Source;
 // 公開
 public:
 	static CMotionManager& GetInstance(void) { return m_instance; }
@@ -101,9 +94,9 @@ public:
 	CMotionManager(const CMotionManager&) = delete;
 	CMotionManager& operator=(const CMotionManager&) = delete;
 
-	void Load(const vector<Source> aSource) { m_aSource = aSource; }
+	void Load(const vector<motion::Source> aSource) { m_aSource = aSource; }
 
-	HRESULT Register(const Source source) { m_aSource.push_back(source); }
+	HRESULT Register(const motion::Source source) { m_aSource.push_back(source); }
 
 	Index Create(void);
 	void Release(void);
@@ -118,6 +111,6 @@ private:
 	CMotionManager() : m_apMotion{}, m_aSource{} {}
 	~CMotionManager() = default;
 
-	vector<Source> m_aSource;     // 読み込んだモーションデータの格納庫
-	vector<CMotion*> m_apMotion;  // モーションのポインタ配列
+	vector<motion::Source> m_aSource; // 読み込んだモーションデータの格納庫
+	vector<CMotion*> m_apMotion;      // モーションのポインタ配列
 };

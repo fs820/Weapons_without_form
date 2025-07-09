@@ -78,7 +78,7 @@ public:
 	HRESULT Init(HINSTANCE hInstance, HWND hWnd, BOOL bWindow);
 	void Uninit(void);
 	void Update(void);
-	void Draw(void);
+	HRESULT Draw(void);
 
 	static const CRenderer& GetRenderer(void) { return *m_pRenderer; }
 	static HRESULT RenererReset(const BOOL bWindow);

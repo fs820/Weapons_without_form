@@ -8,8 +8,6 @@
 #include "main.h"
 #include "object.h"
 
-using namespace DirectX3D; // DirectX3D名前空間の使用
-
 //-----------------------------------------
 // オブジェクト3Dクラス (オブジェクト派生)
 //-----------------------------------------
@@ -22,10 +20,10 @@ public:
 	virtual ~CObjectBillboard() = default;
 
 	static CObjectBillboard* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority = 3);
-	static CObjectBillboard* Create(Transform transform, TYPE type, int priority = 3);
+	static CObjectBillboard* Create(DirectX::Transform transform, TYPE type, int priority = 3);
 
 	HRESULT Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type);
-	HRESULT Init(Transform transform, TYPE type);
+	HRESULT Init(DirectX::Transform transform, TYPE type);
 	void Uninit(void) override;
 	void Update(void) override;
 	void Draw(void) override;

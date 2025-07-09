@@ -9,6 +9,8 @@
 #include "manager.h"
 #include "number.h"
 
+using namespace DirectX; // DirectX空間の使用
+
 //---------------------------------------
 //
 // スコアクラス
@@ -80,7 +82,7 @@ HRESULT CScore::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale)
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(renderer.GetDxScreenSize(&screenSize)))
+	if (FAILED(renderer.GetViewportSize(&screenSize)))
 	{
 		return E_FAIL;
 	}
@@ -117,7 +119,7 @@ HRESULT CScore::Init(Transform transform)
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(renderer.GetDxScreenSize(&screenSize)))
+	if (FAILED(renderer.GetViewportSize(&screenSize)))
 	{
 		return E_FAIL;
 	}

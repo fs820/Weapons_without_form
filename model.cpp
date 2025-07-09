@@ -8,6 +8,8 @@
 #include "manager.h"
 #include "texture.h"
 
+using namespace model; // モデル空間の使用
+
 //----------------------------------------------------
 //
 // モデルクラス

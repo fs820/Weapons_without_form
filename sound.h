@@ -8,6 +8,45 @@
 #include "main.h"    // メイン
 #include "xaudio2.h" // サウンド用
 
+namespace sound
+{
+	// 同じソースを同時再生できる最大数
+	constexpr Index8 SOUND_MAX = Index8(32);
+
+	constexpr float FADE_TIME = 1.0f;                        // フェードアウト時間
+	constexpr milliseconds FADE_INTERVAL = milliseconds(50); // フェードアウト間隔 ms
+
+	// サウンド列挙
+	enum class LABEL : Index8
+	{
+		TestBgm, // TestBgm
+		TestSe,	 // TestSe
+		Max      // サウンド数
+	};
+
+	// サウンド情報体定義
+	struct Info
+	{
+		const string_view sFilename; // ファイル名
+		const int nCntLoop;		     // ループカウント
+
+		Info(string_view filename, int cntLoop) : sFilename(filename), nCntLoop(cntLoop) {}
+		~Info() = default;
+	};
+
+	// オーディオソース構造体定義
+	struct AudioSource
+	{
+		array<IXAudio2SourceVoice*, sound::SOUND_MAX> pSourceVoice; // ソースボイス
+		BYTE* pDataAudio;			                                // オーディオデータ
+		DWORD sizeAudio;				                            // オーディオデータサイズ
+		XAUDIO2_BUFFER buffer;                                      // オーディオバッファー
+
+		AudioSource() : pSourceVoice{}, pDataAudio{}, sizeAudio{}, buffer{} {}
+		~AudioSource() = default;
+	};
+}
+
 //---------------------------------------------------------
 // サウンドクラス (渡されたサウンドの再生・停止などを行う)
 //---------------------------------------------------------
@@ -16,23 +55,20 @@ class CSound final
 	// 公開
 public:
 	CSound() : m_pSourceVoice{}, m_isFadeOut{}, m_isFadeOutEnd{}, m_pBuffer{}, m_baseVolume{}, m_fadeOutVolume{} {};
-	CSound(IXAudio2SourceVoice* pSourceVoice, XAUDIO2_BUFFER* pBuffer) : m_pSourceVoice(pSourceVoice), m_isFadeOut{}, m_isFadeOutEnd{}, m_pBuffer(pBuffer), m_baseVolume{}, m_fadeOutVolume{} {};
+	CSound(IXAudio2SourceVoice* pSourceVoice, XAUDIO2_BUFFER* pBuffer) : m_pSourceVoice(pSourceVoice), m_isFadeOut{}, m_isFadeOutEnd{}, m_pBuffer(pBuffer), m_baseVolume{}, m_fadeOutVolume{} {}
 	~CSound() = default;
 
 	HRESULT Play(const float volume = 1.0f);
 	void Stop(void);
 	HRESULT SetVolume(const float volume);
 	HRESULT AddVolume(const float volume);
-	HRESULT GetVolume(float* pVolume) const { m_pSourceVoice->GetVolume(pVolume); };
+	HRESULT GetVolume(float* pVolume) const { m_pSourceVoice->GetVolume(pVolume); }
 	void Update(void);
 
-	bool IsStop() { return m_isFadeOutEnd; };
+	bool IsStop() { return m_isFadeOutEnd; }
 
 	// 非公開
 private:
-	static constexpr float FADE_TIME = 1.0f;                        // フェードアウト時間
-	static constexpr milliseconds FADE_INTERVAL = milliseconds(50); // フェードアウト間隔 ms
-
 	IXAudio2SourceVoice* m_pSourceVoice;   // ソースボイス
 	XAUDIO2_BUFFER* m_pBuffer;             // オーディオバッファーポインタ
 	float m_baseVolume;                    // 基本ボリューム
@@ -46,17 +82,9 @@ private:
 //--------------------------------------------------------------------------------------------------------------
 class CSoundManager final
 {
-// 公開
+	// 公開
 public:
-    // サウンド列挙
-	using LABEL = enum
-	{
-		LABEL_TEST_BGM,	// TestBgm
-		LABEL_TEST_SE,	// TestSe
-		LABEL_MAX       // サウンド数
-	};
-
-	static CSoundManager& GetInstance(void) { return m_instance; };
+	static CSoundManager& GetInstance(void) { return m_instance; }
 
 	CSoundManager(const CSoundManager&) = delete;
 	CSoundManager& operator=(const CSoundManager&) = delete;
@@ -64,43 +92,26 @@ public:
 	HRESULT Init(HWND hWnd);
 	void Uninit(void);
 	void Update(void);
-	size_t Play(LABEL label, float volume = 1.0f);
-	void Stop(LABEL label, size_t id);
+	Index Play(Index8 label, float volume = 1.0f);
+	void Stop(Index8 label, size_t id);
 	void Stop(void);
 	HRESULT SetVolume(const float volume);
-	HRESULT SetVolume(LABEL label, size_t id, const float volume);
+	HRESULT SetVolume(Index8 label, size_t id, const float volume);
 	HRESULT AddVolume(const float volume);
-	HRESULT AddVolume(LABEL label, size_t id, const float volume);
+	HRESULT AddVolume(Index8 label, size_t id, const float volume);
 
-// 非公開
+	// 非公開
 private:
-	static constexpr size_t SOUND_MAX = 16; // 1種類のサウンドの最大数
-
-	// サウンド情報体定義
-	using Info = struct
-	{
-		string_view sFilename;	// ファイル名
-		int nCntLoop;		// ループカウント
-	};
-
-	// オーディオソース構造体定義
-	using AudioSource = struct
-	{
-		IXAudio2SourceVoice* pSourceVoice[SOUND_MAX]; // ソースボイス
-		BYTE* pDataAudio;			                  // オーディオデータ
-		DWORD sizeAudio;				              // オーディオデータサイズ
-		XAUDIO2_BUFFER buffer;                        // オーディオバッファー
-	};
-
 	static CSoundManager m_instance;     // 自分のインスタンス
 
 	CSoundManager() : m_pXAudio2{}, m_pMasteringVoice{}, m_apSound{},
 		// サウンド情報
 		m_aInfo{
-	{"data/BGM/Test.wav", -1}, // TestBgm
-	{"data/SE/Test.wav", 0}    // TestSe
+			sound::Info{"data/BGM/Test.wav", -1}, // TestBgm
+			sound::Info{"data/SE/Test.wav", 0}    // TestSe
 	},
-		m_audioSource{} {};
+		m_audioSource{} {
+	};
 	~CSoundManager() = default;
 
 	HRESULT CheckChunk(HANDLE hFile, DWORD format, DWORD* pChunkSize, DWORD* pChunkDataPosition);
@@ -109,7 +120,7 @@ private:
 	IXAudio2* m_pXAudio2;						// XAudio2オブジェクトへのインターフェイス
 	IXAudio2MasteringVoice* m_pMasteringVoice;  // マスターボイス
 
-	CSound* m_apSound[LABEL_MAX][SOUND_MAX];    // サウンドのインスタンス
-	const Info m_aInfo[LABEL_MAX];              // サウンド情報
-	AudioSource m_audioSource[LABEL_MAX];       // オーディオソース (再生用データ)
+	array<array<CSound*, sound::SOUND_MAX>, Index8(sound::LABEL::Max)> m_apSound; // サウンドインスタンスポインタ
+	array<sound::Info, Index8(sound::LABEL::Max)> m_aInfo;                        // サウンド情報
+	array<sound::AudioSource, Index8(sound::LABEL::Max)> m_audioSource;           // オーディオソース (再生用データ)
 };

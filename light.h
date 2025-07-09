@@ -22,7 +22,5 @@ public:
 
 // 非公開
 private:
-	static constexpr size_t MAX_LIGHT = 4; // ライトの最大数
-
-	D3DLIGHT9 m_light[MAX_LIGHT]; // ライト情報
+	array<D3DLIGHT9, 8> m_light; // ライト情報
 };

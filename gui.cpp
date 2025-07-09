@@ -9,6 +9,8 @@
 #include "math.h"
 #include "debug.h"
 
+using namespace ImGui;         // ImGui
+
 //---------------------------------------
 //
 // ImGui

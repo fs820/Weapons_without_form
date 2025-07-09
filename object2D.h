@@ -8,8 +8,6 @@
 #include "main.h"
 #include "object.h"
 
-using namespace DirectX2D; // DirectX2D名前空間の使用
-
 //-----------------------------------------
 // オブジェクト2Dクラス (オブジェクト派生)
 //-----------------------------------------
@@ -22,10 +20,10 @@ public:
 	virtual ~CObject2D() = default;
 
 	static CObject2D* Create(LPDIRECT3DTEXTURE9 pTexture, D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority = 3);
-	static CObject2D* Create(LPDIRECT3DTEXTURE9 pTexture, Transform transform, TYPE type, int priority = 3);
+	static CObject2D* Create(LPDIRECT3DTEXTURE9 pTexture, DirectX::Transform transform, TYPE type, int priority = 3);
 
 	HRESULT Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type);
-	HRESULT Init(Transform transform, TYPE type);
+	HRESULT Init(DirectX::Transform transform, TYPE type);
 	void Uninit(void) override;
 	void Update(void) override;
 	void Draw(void) override;

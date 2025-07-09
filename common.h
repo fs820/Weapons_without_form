@@ -6,6 +6,7 @@
 //-------------------------------
 #pragma once
 
+// 破棄マクロ
 #define SAFE_FREE(p) { if (p != nullptr) { free(p); (p) = nullptr; } }           // ポインタの安全な解放マクロ
 #define SAFE_DELETE(p) { if (p != nullptr) { delete (p); (p) = nullptr; } }      // ポインタの安全な削除マクロ
 #define SAFE_DELETE_ARRAY(p) { for (auto& item : p) { if (item != nullptr) { delete item; item = nullptr; } } } // 配列ポインタの安全なアンイニットマクロ
@@ -15,11 +16,22 @@
 #define SAFE_RELEASE(p) { if (p != nullptr) { (p)->Release(); (p) = nullptr; } } // ポインタの安全な解放マクロ
 #define SAFE_RELEASE_ARRAY(p) { for (auto& item : p) { if (item != nullptr) { item->Release(); item = nullptr; } } } // 配列ポインタの安全な解放マクロ
 
+// 固有フラグ
 constexpr bool OK = true;
 constexpr bool NO = false;
 constexpr bool ON = true;
 constexpr bool OFF = false;
+
+// Index定義
 using Index = unsigned int;
+using Index8 = unsigned char;
+using Index16 = unsigned short;
+using Index32 = unsigned int;
+using Index64 = unsigned long long;
 constexpr Index INVALID_ID = Index(-1);
 
+// 汎用Vectorタグ
 using VECTORTAG = enum { X, Y, Z, W };
+
+// 汎用左右
+using LR = enum { Left, Right };

@@ -46,11 +46,9 @@ namespace model
 //-----------------------------------------
 class CModel final
 {
-	// クラスusing
-	using Source = model::Source;
 // 公開
 public:
-	CModel(const Source* pSource) : m_pSource(pSource), m_pModel{}, m_offSet{}, m_transform{} {}
+	CModel(const model::Source* pSource) : m_pSource(pSource), m_pModel{}, m_offSet{}, m_transform{} {}
 	~CModel() = default;
 
 	HRESULT Init(void);
@@ -93,7 +91,7 @@ public:
 
 // 非公開
 private:
-	const Source* m_pSource;         // ソース情報のポインタ
+	const model::Source* m_pSource;  // ソース情報のポインタ
 	const CModel* m_pModel;          // 親モデルのポインタ
 	WriteOnce<D3DXVECTOR3> m_offSet; // オフセット
 	DirectX::Transform m_transform;  // トランスフォーム情報
@@ -104,8 +102,6 @@ private:
 //----------------------------------------------
 class CModelManager final
 {
-	// クラスusing
-	using Source = model::Source;
 // 公開
 public:
 	static CModelManager& GetInstance(void) { return m_instance; }
@@ -162,8 +158,8 @@ private:
 	CModelManager() : m_apModel{}, m_aModelSource{} {}
 	~CModelManager() = default;
 
-	HRESULT LoadX(LPDIRECT3DDEVICE9 pDevice, Source* pSource);
+	HRESULT LoadX(LPDIRECT3DDEVICE9 pDevice, model::Source* pSource);
 
-	vector<Source> m_aModelSource; // モデルソース情報
-	vector<CModel*> m_apModel;     // モデルのポインタ配列
+	vector<model::Source> m_aModelSource; // モデルソース情報
+	vector<CModel*> m_apModel;            // モデルのポインタ配列
 };

@@ -10,6 +10,8 @@
 #include "object2D.h"
 #include "texture.h"
 
+using namespace DirectX2D; // DirectX2D空間の使用
+
 //---------------------------------------
 //
 // プレイヤークラス
@@ -80,7 +82,7 @@ HRESULT CBg::Init(void)
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(renderer.GetDxScreenSize(&screenSize)))
+	if (FAILED(renderer.GetViewportSize(&screenSize)))
 	{
 		return E_FAIL;
 	}
@@ -137,7 +139,7 @@ void CBg::Update(void)
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(renderer.GetDxScreenSize(&screenSize)))
+	if (FAILED(renderer.GetViewportSize(&screenSize)))
 	{
 		return;
 	}

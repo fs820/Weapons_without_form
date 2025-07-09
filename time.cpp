@@ -9,6 +9,8 @@
 #include "manager.h"
 #include "number.h"
 
+using namespace DirectX; // DirectX空間の使用
+
 //---------------------------------------
 //
 // タイムクラス
@@ -76,12 +78,12 @@ HRESULT CTime::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale)
 		return E_POINTER;
 	}
 
-	m_fTime = 0.0f; // 時間
-	m_count = NONE; // カウント状態
+	m_fTime = 0.0f;        // 時間
+	m_count = Count::None; // カウント状態
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(renderer.GetDxScreenSize(&screenSize)))
+	if (FAILED(renderer.GetViewportSize(&screenSize)))
 	{
 		return E_FAIL;
 	}
@@ -114,12 +116,12 @@ HRESULT CTime::Init(Transform transform)
 		return E_POINTER;
 	}
 
-	m_fTime = 0.0f; // 時間
-	m_count = NONE; // カウント状態
+	m_fTime = 0.0f;        // 時間
+	m_count = Count::None; // カウント状態
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(renderer.GetDxScreenSize(&screenSize)))
+	if (FAILED(renderer.GetViewportSize(&screenSize)))
 	{
 		return E_FAIL;
 	}
@@ -162,10 +164,10 @@ void CTime::Update(void)
 	switch (m_count)
 	{
 		// カウントしない
-	case NONE:
+	case Count::None:
 		break;
 		// カウントアップ
-	case UP:
+	case Count::Up:
 	{
 		m_fTime += CMain::GetDeltaTimeGameSpeed();
 
@@ -184,7 +186,7 @@ void CTime::Update(void)
 		break;
 	}
 	// カウントダウン
-	case DOWN:
+	case Count::Down:
 	{
 		m_fTime -= CMain::GetDeltaTimeGameSpeed();
 
@@ -201,7 +203,7 @@ void CTime::Update(void)
 			}
 		}
 
-		if (m_fTime <= 0.0f) m_count = NONE; // 0になったらカウントダウン終了
+		if (m_fTime <= 0.0f) m_count = Count::None; // 0になったらカウントダウン終了
 		break;
 	}
 	}

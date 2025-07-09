@@ -10,9 +10,7 @@
 #include "imgui-master\\imgui_impl_dx9.h"    // ImGui (DirectX9)
 #include "imgui-master\\imgui_impl_win32.h"  // ImGui (Win32)
 
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);                // Use ImGui::GetCurrentContext()
-
-using namespace ImGui;         // ImGui
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); // Use ImGui::GetCurrentContext()
 
 //--------------------------
 // êîéö (ññí[)
@@ -21,7 +19,7 @@ class CGui final
 {
 	// åˆäJ
 public:
-	CGui() {}
+	CGui() = default;
 	~CGui() = default;
 
 	bool Proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) const { return ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam); }

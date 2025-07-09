@@ -14,10 +14,8 @@
 void CLight::Init(void)
 {
 	LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer().GetDevice();
-	// ライトをクリアする
-	ZeroMemory(m_light, sizeof(m_light));
 
-	for (size_t cntLight = 0; cntLight < MAX_LIGHT; cntLight++)
+	for (size_t cntLight = 0; cntLight < m_light.size(); cntLight++)
 	{
 		// ライトの種類を設定
 		m_light[cntLight].Type = D3DLIGHT_DIRECTIONAL;

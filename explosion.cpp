@@ -10,6 +10,8 @@
 #include "math.h"
 #include "sound.h"
 
+using namespace DirectX3D; // DirectX2D空間の使用
+
 //---------------------------------------
 //
 // Bullet
@@ -108,7 +110,7 @@ HRESULT CExplosion::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TY
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(CManager::GetRenderer().GetDxScreenSize(&screenSize)))
+	if (FAILED(CManager::GetRenderer().GetViewportSize(&screenSize)))
 	{
 		return E_FAIL;
 	}
@@ -151,7 +153,7 @@ HRESULT CExplosion::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TY
 
 	if (FAILED(pVtxBuff->Unlock())) { return E_FAIL; }
 
-	CSoundManager::GetInstance().Play(CSoundManager::LABEL_TEST_SE); // 再生
+	CSoundManager::GetInstance().Play(Index8(sound::LABEL::TestSe)); // 再生
 
 	return S_OK;
 }
@@ -184,7 +186,7 @@ void CExplosion::Update(void)
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(renderer.GetDxScreenSize(&screenSize)))
+	if (FAILED(renderer.GetViewportSize(&screenSize)))
 	{
 		return;
 	}

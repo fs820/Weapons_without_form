@@ -7,6 +7,8 @@
 #include "object.h"
 #include "manager.h"
 
+using namespace DirectX; // DirectX名前空間の使用
+
 //---------------------------------------
 //
 // オブジェクト基本クラス
@@ -56,13 +58,30 @@ void CObject::UpdateAll(void)
 //------------------------------
 // 全描画
 //------------------------------
-void CObject::DrawAll(void)
+void CObject::DrawAll(bool bAfterimage)
 {
 	for (auto& priority : m_apObject)
 	{// priority配列
 		for (auto& pObject : priority)
 		{// オブジェクト配列
-			if (pObject != nullptr)
+			if (pObject != nullptr && (!bAfterimage || pObject->IsAfterimage()))
+			{// 存在する
+				pObject->Draw();
+			}
+		}
+	}
+}
+
+//------------------------------
+// プライオリティ描画
+//------------------------------
+void CObject::DrawPriority(Index priority, bool bAfterimage)
+{
+	if (priority < m_apObject.size())
+	{
+		for (auto& pObject : m_apObject[priority])
+		{// オブジェクト配列
+			if (pObject != nullptr && (!bAfterimage || pObject->IsAfterimage()))
 			{// 存在する
 				pObject->Draw();
 			}

@@ -6,6 +6,8 @@
 #include "sound.h"
 #include "debug.h"
 
+using namespace sound; // サウンドスペースの使用
+
 //----------------------------------------------------
 //
 // サウンドクラス
@@ -129,9 +131,9 @@ void CSound::Update(void)
 		if (m_isFadeOut)
 		{// フェードアウト中
 			// 音量が0になるまで音量を少しずつ下げる
-			m_fadeOutVolume -= m_baseVolume * (CMain::GetDeltaTimeGameSpeed() / FADE_TIME); // 少しずつ下げる
-			m_fadeOutVolume = max(0.0f, m_fadeOutVolume);                                   // 下限値
-			m_pSourceVoice->SetVolume(m_fadeOutVolume);                                     // 音量変更
+			m_fadeOutVolume -= m_baseVolume * (CMain::GetDeltaTimeGameSpeed() / sound::FADE_TIME); // 少しずつ下げる
+			m_fadeOutVolume = max(0.0f, m_fadeOutVolume);                                          // 下限値
+			m_pSourceVoice->SetVolume(m_fadeOutVolume);                                            // 音量変更
 
 			if (m_fadeOutVolume <= 0.0f)
 			{// 音がなくなったら
@@ -214,7 +216,7 @@ HRESULT CSoundManager::Init(HWND hWnd)
 	}
 
 	// サウンドデータの初期化
-	for(int nCntSound = 0; nCntSound < LABEL_MAX; nCntSound++)
+	for(int nCntSound = 0; nCntSound < Index8(LABEL::Max); nCntSound++)
 	{
 		HANDLE hFile;
 		DWORD dwChunkSize = 0;
@@ -312,7 +314,7 @@ HRESULT CSoundManager::Init(HWND hWnd)
 		m_audioSource[nCntSound].buffer.LoopCount = m_aInfo[nCntSound].nCntLoop;
 	
 		// ソースボイスの生成
-		for (size_t cntSound = 0; cntSound < SOUND_MAX; cntSound++)
+		for (size_t cntSound = 0; cntSound < sound::SOUND_MAX; cntSound++)
 		{
 			hr = m_pXAudio2->CreateSourceVoice(&m_audioSource[nCntSound].pSourceVoice[cntSound], &(wfx.Format));
 			if (FAILED(hr))
@@ -340,54 +342,39 @@ HRESULT CSoundManager::Init(HWND hWnd)
 void CSoundManager::Uninit(void)
 {
 	// 再生用クラス
-	for (LABEL label = LABEL(0); label < LABEL_MAX; label = LABEL(label + 1))
-	{
-		for (size_t cntSund = 0; cntSund < SOUND_MAX; cntSund++)
-		{
-			if (m_apSound[label][cntSund] != nullptr)
-			{
-				delete m_apSound[label][cntSund];
-				m_apSound[label][cntSund] = nullptr;
-			}
-		}
+	for (auto& label: m_apSound)
+	{// サウンドループ
+		SAFE_DELETE_ARRAY(label);
 	}
 
 	// ソースデータ
-	for (LABEL label = LABEL(0); label < LABEL_MAX; label = LABEL(label + 1))
-	{
+	for (auto& label : m_audioSource)
+	{// ソースデータラベルループ
 		// ソースボイスの破棄
-		for (size_t cntSound = 0; cntSound < SOUND_MAX; cntSound++)
-		{
-			if (m_audioSource[label].pSourceVoice[cntSound] != nullptr)
-			{
-				m_audioSource[label].pSourceVoice[cntSound]->Stop(0);
-				m_audioSource[label].pSourceVoice[cntSound]->FlushSourceBuffers();
-				m_audioSource[label].pSourceVoice[cntSound]->DestroyVoice();
-				m_audioSource[label].pSourceVoice[cntSound] = nullptr;
+		for (auto& source : label.pSourceVoice)
+		{// 再生音声データループ
+			if (source != nullptr)
+			{// 存在する
+				source->Stop(0);
+				source->FlushSourceBuffers();
+				source->DestroyVoice();
+				source = nullptr;
 			}
 		}
 
 		// オーディオデータの開放
-		if (m_audioSource->pDataAudio != nullptr)
-		{
-			delete[] m_audioSource[label].pDataAudio;
-			m_audioSource[label].pDataAudio = nullptr;
-		}
+		SAFE_DELETE(label.pDataAudio);
 	}
 	
 	// マスターボイスの破棄
 	if (m_pMasteringVoice != nullptr)
-	{
+	{// 存在する
 		m_pMasteringVoice->DestroyVoice();
 		m_pMasteringVoice = nullptr;
 	}
 	
 	// XAudio2オブジェクトの開放
-	if(m_pXAudio2 != nullptr)
-	{
-		m_pXAudio2->Release();
-		m_pXAudio2 = nullptr;
-	}
+	SAFE_RELEASE(m_pXAudio2);
 	
 	// COMライブラリの終了処理
 	CoUninitialize();
@@ -398,20 +385,21 @@ void CSoundManager::Uninit(void)
 //=============================================================================
 void CSoundManager::Update(void)
 {
-	for (LABEL label = LABEL(0); label < LABEL_MAX; label = LABEL(label + 1))
-	{
-		for (size_t cntSound = 0; cntSound < SOUND_MAX; cntSound++)
-		{
-			if (m_apSound[label][cntSound] != nullptr)
-			{
-				CDebugProc::Print(CDebugProc::MODE::System, "再生中:%d,%d", label, cntSound);
-				m_apSound[label][cntSound]->Update();
+	for (auto& label : m_apSound)
+	{// ラベル走査
+		for (auto& Sound : label)
+		{// データ走査
+			if (Sound != nullptr)
+			{// 存在する
+				CDebugProc::Print(CDebugProc::MODE::System, "再生中:%d,%d", label);
+				Sound->Update(); // 更新
 
-				if (m_apSound[label][cntSound]->IsStop())
-				{
-					delete m_apSound[label][cntSound];
-					m_apSound[label][cntSound] = nullptr;
-					CDebugProc::Print(CDebugProc::MODE::System, "停止:%d,%d", label, cntSound);
+				if (Sound->IsStop())
+				{// 停止フラグ
+					// 破棄
+					delete Sound;
+					Sound = nullptr;
+					CDebugProc::Print(CDebugProc::MODE::System, "停止:%d,%d", label);
 				}
 			}
 		}
@@ -421,54 +409,54 @@ void CSoundManager::Update(void)
 //=============================================================================
 // セグメント再生(再生中なら停止)
 //=============================================================================
-size_t CSoundManager::Play(LABEL label, float volume)
+Index CSoundManager::Play(Index8 label, float volume)
 {
 	// `label` の範囲チェック
-	if (label < static_cast<LABEL>(0) || label >= LABEL_MAX)
+	if (label < 0 || label >= Index(LABEL::Max))
 	{
-		return static_cast<size_t>(-1);
+		return INVALID_ID;
 	}
 
-	for (size_t cntSound = 0; cntSound < SOUND_MAX; cntSound++)
+	for (Index cntSound = 0; cntSound < sound::SOUND_MAX; ++cntSound)
 	{
-		if (m_apSound[label][cntSound] == nullptr)
+		if (m_audioSource[label].pSourceVoice[cntSound] == nullptr)
 		{
 			m_apSound[label][cntSound] = new CSound(m_audioSource[label].pSourceVoice[cntSound], &m_audioSource[label].buffer);
 
-			if (m_apSound[label] != nullptr)
+			if (m_apSound[label][cntSound] != nullptr)
 			{
-				if (FAILED(m_apSound[label][cntSound]->Play(volume)))return static_cast<size_t>(-1);
+				if (FAILED(m_apSound[label][cntSound]->Play(volume)))return INVALID_ID;
 				CDebugProc::Print(CDebugProc::MODE::System, "停止:%d,%d", label, cntSound);
 				return cntSound;
 			}
 			else
 			{
-				return static_cast<size_t>(-1);
+				return INVALID_ID;
 			}
 		}
 	}
-	return static_cast<size_t>(-1);
+	return INVALID_ID;
 }
 
 //=============================================================================
 // セグメント停止(ラベル指定)
 //=============================================================================
-void CSoundManager::Stop(LABEL label, size_t id)
+void CSoundManager::Stop(Index8 label, size_t id)
 {
 	// `label` の範囲チェック
-	if (label < static_cast<LABEL>(0) || label >= LABEL_MAX)
+	if (label < 0 || label >= Index8(LABEL::Max))
 	{
 		return;
 	}
 	// idの範囲チェック
-	if (id < 0 || id >= SOUND_MAX)
+	if (id < 0 || id >= sound::SOUND_MAX)
 	{
 		return;
 	}
 
-	if (m_apSound[label][id] != nullptr)
+	if (m_apSound[Index8(label)][id] != nullptr)
 	{
-		m_apSound[label][id]->Stop();
+		m_apSound[Index8(label)][id]->Stop();
 	}
 }
 
@@ -478,13 +466,13 @@ void CSoundManager::Stop(LABEL label, size_t id)
 void CSoundManager::Stop(void)
 {
 	// 一時停止
-	for (LABEL label = LABEL(0); label < LABEL_MAX; label = LABEL(label + 1))
-	{
-		for (size_t cntSund = 0; cntSund < SOUND_MAX; cntSund++)
-		{// すべての音楽
-			if (m_apSound[label][cntSund] != nullptr)
+	for (auto& label : m_apSound)
+	{// ラベル走査
+		for (auto& Sound : label)
+		{// データ走査
+			if (Sound != nullptr)
 			{
-				m_apSound[label][cntSund]->Stop();
+				Sound->Stop();
 			}
 		}
 	}
@@ -503,26 +491,26 @@ HRESULT CSoundManager::SetVolume(const float volume)
 //=============================================================================
 // ソース音量変更
 //=============================================================================
-HRESULT CSoundManager::SetVolume(LABEL label, size_t id, const float volume)
+HRESULT CSoundManager::SetVolume(Index8 label, size_t id, const float volume)
 {
 	// `label` の範囲チェック
-	if (label < static_cast<LABEL>(0) || label >= LABEL_MAX)
+	if (label < 0 || label >= Index8(LABEL::Max))
 	{
 		return E_INVALIDARG;
 	}
 	// idの範囲チェック
-	if (id < 0 || id >= SOUND_MAX)
+	if (id < 0 || id >= sound::SOUND_MAX)
 	{
 		return E_INVALIDARG;
 	}
 
-	if (m_apSound[label][id] == nullptr)
+	if (m_apSound[Index8(label)][id] == nullptr)
 	{
 		return E_POINTER;
 	}
 
 	// 音量を変更
-	return m_apSound[label][id]->SetVolume(volume);
+	return m_apSound[Index8(label)][id]->SetVolume(volume);
 }
 
 //=============================================================================
@@ -541,26 +529,26 @@ HRESULT CSoundManager::AddVolume(const float volume)
 //=============================================================================
 // ソース音量変更
 //=============================================================================
-HRESULT CSoundManager::AddVolume(LABEL label, size_t id, const float volume)
+HRESULT CSoundManager::AddVolume(Index8 label, size_t id, const float volume)
 {
 	// labelの範囲チェック
-	if (label < static_cast<LABEL>(0) || label >= LABEL_MAX)
+	if (label < 0 || label >= Index8(LABEL::Max))
 	{
 		return E_INVALIDARG;
 	}
 	// idの範囲チェック
-	if (id < 0 || id >= SOUND_MAX)
+	if (id < 0 || id >= sound::SOUND_MAX)
 	{
 		return E_INVALIDARG;
 	}
 
-	if (m_apSound[label][id] == nullptr)
+	if (m_apSound[Index8(label)][id] == nullptr)
 	{
 		return E_POINTER;
 	}
 
 	// 音量を変更
-	return m_apSound[label][id]->AddVolume(volume);
+	return m_apSound[Index8(label)][id]->AddVolume(volume);
 }
 
 //=============================================================================

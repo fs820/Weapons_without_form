@@ -9,6 +9,8 @@
 #include "manager.h"
 #include "math.h"
 
+using namespace DirectX; // DirectX‹óŠÔ‚ÌŽg—p
+
 //---------------------------------------
 //
 // Particle

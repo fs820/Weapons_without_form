@@ -19,46 +19,49 @@
 namespace input
 {
 	// time
-	static constexpr float RELEASE_TIME = 2.0f;          // Release可能時間
-	static constexpr float REPEAT_START_TIME = 1.0f;     // Repeat開始時間
-	static constexpr float REPEAT_INTERVAL_TIME = 1.0f;  // Repeat間隔
+	constexpr float RELEASE_TIME = 2.0f;          // Release可能時間
+	constexpr float REPEAT_START_TIME = 1.0f;     // Repeat開始時間
+	constexpr float REPEAT_INTERVAL_TIME = 1.0f;  // Repeat間隔
 
 	// Keyboard
-	static constexpr size_t MAX_KEY = 256; // キー数
+	constexpr size_t MAX_KEY = 256u; // キー数
 
 	// Mouse
-	static constexpr float MOUSE_INA = 15.0f;         // マウス移動量
-	static constexpr float MOUSE_WHEEL_INA = 300.0f;  // マウスホイール移動量
-
+	constexpr float MOUSE_INA = 15.0f;         // マウス移動量
+	constexpr float MOUSE_WHEEL_INA = 300.0f;  // マウスホイール移動量
+	
 	// Controller
-	static constexpr int KEY_MAX = 32; //dinputボタンの最大数
+	constexpr WORD VIBRATION_MAX = static_cast<WORD>(65535); // バイブレーション値
+	constexpr SHORT STICK_NUM = static_cast<SHORT>(32767);   // スティックの値
+
+	constexpr int KEY_MAX = 32; //dinputボタンの最大数
 
 	// POV
-	static constexpr int POV_MAX = 4;                // POVの数
-	static constexpr int POV_SYS_MAX = 8;            // POVの方向数
-	static constexpr float POV_NUM = 4500.0f;        // POVの方向係数
-	static constexpr float POV_UP = 0.0f;            //上
-	static constexpr float POV_RIGHTUP = 4500.0f;    //右上
-	static constexpr float POV_RIGHT = 9000.0f;      //右
-	static constexpr float POV_RIGHTDOWN = 13500.0f; //右下
-	static constexpr float POV_DOWN = 18000.0f;      //下
-	static constexpr float POV_LEFTDOWN = 22500.0f;  //左下
-	static constexpr float POV_LEFT = 27000.0f;      //左
-	static constexpr float POV_LEFTUP = 31500.0f;    //左上
+	constexpr int POV_MAX = 4;                // POVの数
+	constexpr int POV_SYS_MAX = 8;            // POVの方向数
+	constexpr float POV_NUM = 4500.0f;        // POVの方向係数
+	constexpr float POV_UP = 0.0f;            // 上
+	constexpr float POV_RIGHTUP = 4500.0f;    // 右上
+	constexpr float POV_RIGHT = 9000.0f;      // 右
+	constexpr float POV_RIGHTDOWN = 13500.0f; // 右下
+	constexpr float POV_DOWN = 18000.0f;      // 下
+	constexpr float POV_LEFTDOWN = 22500.0f;  // 左下
+	constexpr float POV_LEFT = 27000.0f;      // 左
+	constexpr float POV_LEFTUP = 31500.0f;    // 左上
 
-	static constexpr float DSTICK_NUM = -1.0f; // スティック計算用
+	constexpr float DSTICK_NUM = -1.0f; // スティック計算用
 
 	// 抽象ボタンタイプ
-	enum class BUTTON : Index
+	enum class BUTTON : Index8
 	{
 		Interact,
 		Attack,
 		Jump,
 		Max
 	};
-
+	
 	//マウスボタンの種類
-	enum class MOUSE_BUTTON : Index
+	enum class MOUSE_BUTTON : Index8
 	{
 		Left,
 		Right,
@@ -72,7 +75,7 @@ namespace input
 	};
 
 	// ボタンの種類
-	enum class CONTROLLER_BUTTON : Index
+	enum class CONTROLLER_BUTTON : Index8
 	{
 		Up,
 		Down,
@@ -94,7 +97,7 @@ namespace input
 	};
 
 	//Xパッドボタンの種類
-	enum class JOYKEY : Index
+	enum class JOYKEY : Index8
 	{
 		Up,
 		Down,
@@ -116,7 +119,7 @@ namespace input
 	};
 
 	//ELEパッドボタンの種類
-	enum class ELEKEY : Index
+	enum class ELEKEY : Index8
 	{
 		A,
 		B,
@@ -135,7 +138,7 @@ namespace input
 	};
 
 	//PSパッドボタンの種類
-	enum class PSKEY : Index
+	enum class PSKEY : Index8
 	{
 		Sq,
 		Cr,
@@ -155,7 +158,7 @@ namespace input
 	};
 
 	//NINパッドボタンの種類
-	enum class NINKEY : Index
+	enum class NINKEY : Index8
 	{
 		B,
 		A,
@@ -175,7 +178,7 @@ namespace input
 	};
 
 	//Dパッドボタンの種類
-	enum class DKEY : Index
+	enum class DKEY : Index8
 	{
 		A,
 		B,
@@ -195,11 +198,19 @@ namespace input
 		Max
 	};
 
-	// マウスの移動値
-	struct MouseMove
+	// 軸入力
+	struct Axis
 	{
 		float x;
 		float y;
+
+		float Angle(void) { return atan2f(y, x); }
+		void Angle(float* pAngle) { *pAngle = atan2f(y, x); }
+		float Length(void) { return sqrtf(x * x + y * y); }
+		void Length(float* pLength) { *pLength = sqrtf(x * x + y * y); }
+
+		Axis() : x{}, y{} {}
+		~Axis() = default;
 	};
 }
 
@@ -233,9 +244,6 @@ class CInput final
 {
 // 公開
 public:
-	// クラスusing
-	using BUTTON = input::BUTTON;
-
 	static CInput& GetInstance(void) { return m_instance; }
 	CInput(const CInput&) = delete;
 	CInput& operator=(const CInput&) = delete;
@@ -244,19 +252,21 @@ public:
 	void Uninit(void);
 	void Update(void);
 
-	bool IsPress(BUTTON button);
-	bool IsTrigger(BUTTON button);
-	bool IsRelease(BUTTON button);
-	bool IsRepeat(BUTTON button);
-	bool IsTriggerRepeat(BUTTON button) { return IsTrigger(button) || IsRepeat(button); }
+	bool IsPress(Index8 idx, input::BUTTON button);
+	bool IsTrigger(Index8 idx, input::BUTTON button);
+	bool IsRelease(Index8 idx, input::BUTTON button);
+	bool IsRepeat(Index8 idx, input::BUTTON button);
+	bool IsTriggerRepeat(Index8 idx, input::BUTTON button) { return IsTrigger(idx, button) || IsRepeat(idx, button); }
+
+	size_t Count(void);
 
 // 非公開
 private:
 	static CInput m_instance; // インスタンス
 
-	CInputKeyboardManager* m_pKeyboard;     // キーボード
-	CInputMouseManager* m_pMouse;           // マウス
-	CInputControllerManager* m_pController; // コントローラー
+	CInputKeyboardManager* m_pKeyboard;     // キーボード管理
+	CInputMouseManager* m_pMouse;           // マウス管理
+	CInputControllerManager* m_pController; // コントローラー管理
 
 	CInput() :m_pKeyboard{}, m_pMouse{}, m_pController{} {};
 	~CInput() = default;
@@ -269,9 +279,6 @@ class CInputKeyboardManager
 {
 // 公開
 public:
-	// クラスusing
-	using BUTTON = input::BUTTON;
-
 	CInputKeyboardManager() : m_apKeyboard{} {}
 	~CInputKeyboardManager() = default;
 
@@ -279,10 +286,11 @@ public:
 	void Uninit(void);
 	void Update(void);
 
-	bool IsPress(BUTTON button);
-	bool IsTrigger(BUTTON button);
-	bool IsRelease(BUTTON button);
-	bool IsRepeat(BUTTON button);
+	bool IsPress(Index8 idx, input::BUTTON button);
+	bool IsTrigger(Index8 idx, input::BUTTON button);
+	bool IsRelease(Index8 idx, input::BUTTON button);
+	bool IsRepeat(Index8 idx, input::BUTTON button);
+	size_t Count(void) { return m_apKeyboard.size(); }
 
 // 非公開
 private:
@@ -296,10 +304,6 @@ class CInputMouseManager
 {
 // 公開
 public:
-	// クラスusing
-	using BUTTON = input::BUTTON;
-	using MouseMove = input::MouseMove;
-
 	CInputMouseManager() : m_apMouse{} {}
 	~CInputMouseManager() = default;
 
@@ -307,12 +311,13 @@ public:
 	void Uninit(void);
 	void Update(void);
 
-	bool IsPress(BUTTON button);
-	bool IsTrigger(BUTTON button);
-	bool IsRelease(BUTTON button);
-	bool IsRepeat(BUTTON button);
-	MouseMove GetMove(void);
-	float GetWheel(void);
+	bool IsPress(Index8 idx, input::BUTTON button);
+	bool IsTrigger(Index8 idx, input::BUTTON button);
+	bool IsRelease(Index8 idx, input::BUTTON button);
+	bool IsRepeat(Index8 idx, input::BUTTON button);
+	input::Axis GetAxis(Index8 idx);
+	float GetWheel(Index8 idx);
+	size_t Count(void) { return m_apMouse.size(); }
 
 	// 非公開
 private:
@@ -326,26 +331,23 @@ class CInputControllerManager
 {
 // 公開
 public:
-	// クラスusing
-	using BUTTON = input::BUTTON;
-
-	CInputControllerManager();
-	~CInputControllerManager();
+	CInputControllerManager() : m_apController{} {};
+	~CInputControllerManager() = default;
 
 	HRESULT Init(HINSTANCE hInstanse, HWND hWnd);
 	void Uninit(void);
 	void Update(void);
 
-	bool IsPress(Index controller, BUTTON button);
-	bool IsTrigger(Index controller, BUTTON button);
-	bool IsRelease(Index controller, BUTTON button);
-	bool IsRepeat(Index controller, BUTTON button);
-	void SetVibrate(Index controller, float fLeftPower, float fReghtPower);
+	bool IsPress(Index idx, input::BUTTON button);
+	bool IsTrigger(Index idx, input::BUTTON button);
+	bool IsRelease(Index idx, input::BUTTON button);
+	bool IsRepeat(Index idx, input::BUTTON button);
+	void SetVibrate(Index idx, float fLeftPower, float fReghtPower);
 
-	bool IsXInputControllerConnected(Index Controller);
-	bool IsDirectInputControllerConnected(Index Controller);
-	string_view ControllerName(Index Controller);
-	int ControllerNum(void);
+	bool IsXInputControllerConnected(Index idx);
+	bool IsDirectInputControllerConnected(Index idx);
+	string_view ControllerName(Index idx);
+	size_t Count(void) { return m_apController.size(); }
 
 // 非公開
 private:
@@ -357,31 +359,35 @@ private:
 //-----------------------------
 class CInputKeyboard
 {
-	// 公開
+// 公開
 public:
-	CInputKeyboard();
-	~CInputKeyboard();
+	CInputKeyboard() : m_state{}, m_stateOld{}, m_bPress{}, m_bTrigger{}, m_bRelease{}, m_bRepeat{}, m_PressTime{}, m_RepeatTime{} {};
+	virtual ~CInputKeyboard() = default;
 
-	HRESULT Init(HINSTANCE hInstanse, HWND hWnd);
-	void Uninit(void);
+	virtual HRESULT Init(HINSTANCE hInstanse, HWND hWnd) = 0;
+	virtual void Uninit(void) = 0;
 	void Update(void);
 
-	bool IsPress(size_t key);
-	bool IsTrigger(size_t key);
-	bool IsRelease(size_t key);
-	bool IsRepeat(size_t key);
+	bool IsPress(Index8 key) const { return m_bPress[key]; }
+	bool IsTrigger(Index8 key) const { return m_bTrigger[key]; }
+	bool IsRelease(Index8 key) const { return m_bRelease[key]; }
+	bool IsRepeat(Index8 key) const { return m_bRepeat[key]; }
 
-	// 非公開
+// 家族公開
+protected:
+	virtual HRESULT GetState(span<BYTE> state) const = 0;
+// 非公開
 private:
-	BYTE m_KeyState[input::MAX_KEY];	 // キー状態
-	BYTE m_KeyStateOld[input::MAX_KEY];  // 前回キー状態
+	array <BYTE, input::MAX_KEY> m_state;	 // 今回のキー状態
+	array <BYTE, input::MAX_KEY> m_stateOld; // 前回のキー状態
 
-	bool m_bKeyPress[input::MAX_KEY];	  // キー押下状態
-	bool m_bKeyTrigger[input::MAX_KEY];  // キー入力状態
-	bool m_bKeyRelease[input::MAX_KEY];  // キー離し状態
-	bool m_bKeyRepeat[input::MAX_KEY];   // キー長押し状態
+	array<bool, input::MAX_KEY> m_bPress;	  // キー押下状態
+	array<bool, input::MAX_KEY> m_bTrigger;   // キー入力状態
+	array<bool, input::MAX_KEY> m_bRelease;   // キー離し状態
+	array<bool, input::MAX_KEY> m_bRepeat;    // キー長押し状態
 
-	int m_KeyPressTime[input::MAX_KEY];  // キー押下時間
+	array<float, input::MAX_KEY> m_PressTime;  // キー押下時間
+	array<float, input::MAX_KEY> m_RepeatTime; // キー押下時間
 };
 
 //-----------------------------
@@ -391,40 +397,41 @@ class CInputMouse
 {
 // 公開
 public:
-	// クラスusing
-	using MOUSE_BUTTON = input::MOUSE_BUTTON;
-	using MouseMove = input::MouseMove;
+	CInputMouse() : m_state{}, m_stateOld{}, m_bPress{}, m_bTrigger{}, m_bRelease{}, m_bRepeat{}, m_PressTime{}, m_RepeatTime{}, m_Move{}, m_WheelMove{} {}
+	virtual ~CInputMouse() = default;
 
-	CInputMouse() : m_MouseState{}, m_MouseStateOld{}, m_bPress{}, m_bTrigger{}, m_bRelease{}, m_bRepeat{}, m_PressTime{}, m_RepeatTime{}, m_Move{}, m_WheelMove{} {}
-	~CInputMouse() = default;
-
-	HRESULT Init(HINSTANCE hInstanse, HWND hWnd);
-	void Uninit(void);
+	virtual HRESULT Init(HINSTANCE hInstanse, HWND hWnd) = 0;
+	virtual void Uninit(void) = 0;
 	void Update(void);
 
-	bool IsPress(MOUSE_BUTTON button);
-	bool IsTrigger(MOUSE_BUTTON button);
-	bool IsRelease(MOUSE_BUTTON button);
-	bool IsRepeat(MOUSE_BUTTON button);
-	MouseMove GetMove(void);
-	float GetWheel(void);
+	bool IsPress(input::MOUSE_BUTTON button) const { return m_bPress[Index8(button)]; }
+	bool IsTrigger(input::MOUSE_BUTTON button) const { return m_bTrigger[Index8(button)]; }
+	bool IsRelease(input::MOUSE_BUTTON button) const { return m_bRelease[Index8(button)]; }
+	bool IsRepeat(input::MOUSE_BUTTON button) const { return m_bRepeat[Index8(button)]; }
+	input::Axis GetAxis(void) const { return m_Move; }
+	float GetWheel(void) const { return m_WheelMove; }
 
-	// 非公開
+// 家族公開
+protected:
+	virtual HRESULT GetState(span<bool> state) const = 0;
+	virtual HRESULT GetMove(input::Axis* pMove) const = 0;
+	virtual HRESULT GetWheel(float* pWheel) const = 0;
+
+// 非公開
 private:
-	LPDIRECTINPUTDEVICE8 m_pDevice;        // インプットデバイス
+	array<bool, Index8(input::MOUSE_BUTTON::Max)> m_state;	  // 今回のボタン状態
+	array<bool, Index8(input::MOUSE_BUTTON::Max)> m_stateOld; // 前回のボタン状態
 
-	DIMOUSESTATE2 m_MouseState;	   // 状態
-	DIMOUSESTATE2 m_MouseStateOld; // 前回状態
+	array<bool, Index8(input::MOUSE_BUTTON::Max)> m_bPress;	  // ボタン押下状態
+	array<bool, Index8(input::MOUSE_BUTTON::Max)> m_bTrigger; // ボタン入力状態
+	array<bool, Index8(input::MOUSE_BUTTON::Max)> m_bRelease; // ボタン離し状態
+	array<bool, Index8(input::MOUSE_BUTTON::Max)> m_bRepeat;  // ボタン長押し状態
 
-	bool m_bPress[Index(MOUSE_BUTTON::Max)];	  // ボタン押下状態
-	bool m_bTrigger[Index(MOUSE_BUTTON::Max)];    // ボタン入力状態
-	bool m_bRelease[Index(MOUSE_BUTTON::Max)];    // ボタン離し状態
-	bool m_bRepeat[Index(MOUSE_BUTTON::Max)];     // ボタン長押し状態
-	MouseMove m_Move;                             // マウス移動量
-	float m_WheelMove;                            // ホイール移動量
+	input::Axis m_Move; // マウス移動量
+	float m_WheelMove;  // ホイール移動量
 
-	float m_PressTime[Index(MOUSE_BUTTON::Max)];  // ボタン押下時間
-	float m_RepeatTime[Index(MOUSE_BUTTON::Max)]; // ボタン押下時間
+	array<float, Index8(input::MOUSE_BUTTON::Max)> m_PressTime;  // ボタン押下時間
+	array<float, Index8(input::MOUSE_BUTTON::Max)> m_RepeatTime; // ボタン押下時間
 };
 
 //-----------------------------
@@ -434,32 +441,60 @@ class CInputController
 {
 	// 公開
 public:
-	// クラスusing
-	using CONTROLLER_BUTTON = input::CONTROLLER_BUTTON;
+	CInputController() : m_state{}, m_stateOld{}, m_bPress{}, m_bTrigger{}, m_bRelease{}, m_bRepeat{}, m_Stick{}, m_Trigger{}, m_PressTime{}, m_RepeatTime{} {};
+	virtual ~CInputController() = default;
 
-	CInputController() :m_state{} {};
-	~CInputController() = default;
-
-	HRESULT Init(void);
-	void Uninit(void);
+	virtual HRESULT Init(HINSTANCE hInstanse, HWND hWnd) = 0;
+	virtual void Uninit(void) = 0;
 	void Update(void);
 
-	bool IsPress(CONTROLLER_BUTTON button);
-	bool IsTrigger(CONTROLLER_BUTTON button);
-	bool IsRelease(CONTROLLER_BUTTON button);
-	bool IsRepeat(CONTROLLER_BUTTON button);
-	float GetLeftStickAngle(void);
-	float GetRightStickAngle(void);
-	float GetLeftStickLength(void);
-	float GetRightStickLength(void);
-	void Vibrate(WORD wLeftMotorSpeed, WORD wRightMotorSpeed);
+	bool IsPress(input::CONTROLLER_BUTTON button) const { return m_bPress[Index8(button)]; }
+	bool IsTrigger(input::CONTROLLER_BUTTON button) const { return m_bTrigger[Index8(button)]; }
+	bool IsRelease(input::CONTROLLER_BUTTON button) const { return m_bRelease[Index8(button)]; }
+	bool IsRepeat(input::CONTROLLER_BUTTON button) const { return m_bRepeat[Index8(button)]; }
+	input::Axis GetAxis(LR lr) const { return m_Stick[lr]; }
+	float GetTrigger(LR lr) const { return m_Trigger[lr]; }
+	virtual void Vibrate(WORD wLeftMotorSpeed, WORD wRightMotorSpeed) = 0;
 
-	// 非公開
+// 家族公開
+protected:
+	virtual HRESULT GetState(span<bool> state) const = 0;
+	virtual HRESULT GetStick(span<input::Axis> axis) const = 0;
+	virtual HRESULT GetTrigger(span<float> trigger) const = 0;
+
+// 非公開
 private:
-	static constexpr WORD VIBRATION_MAX = WORD(65535); // バイブレーション値
-	static constexpr SHORT STICK_NUM = SHORT(32767);   // スティックの値
+	array<bool, Index8(input::CONTROLLER_BUTTON::Max)> m_state;    // 今回のボタン状態
+	array<bool, Index8(input::CONTROLLER_BUTTON::Max)> m_stateOld; // 前回のボタン状態
 
-	XINPUT_STATE m_state;
+	array<bool, Index8(input::CONTROLLER_BUTTON::Max)> m_bPress;   // ボタン押下状態
+	array<bool, Index8(input::CONTROLLER_BUTTON::Max)> m_bTrigger; // ボタン入力状態
+	array<bool, Index8(input::CONTROLLER_BUTTON::Max)> m_bRelease; // ボタン離し状態
+	array<bool, Index8(input::CONTROLLER_BUTTON::Max)> m_bRepeat;  // ボタン長押し状態
+
+	array <input::Axis, 2> m_Stick; // スティック
+	array <float, 2> m_Trigger;     // トリガー入力
+
+	array<float, Index8(input::CONTROLLER_BUTTON::Max)> m_PressTime;  // ボタン押下時間
+	array<float, Index8(input::CONTROLLER_BUTTON::Max)> m_RepeatTime; // ボタン押下時間
+};
+
+//-----------------------------
+// rawInput管理クラス
+//-----------------------------
+class CInputRawInput
+{
+	// 公開
+public:
+	CInputRawInput() = delete;
+
+	static size_t GetCount(void) { return m_useCount; }
+
+	static HRESULT AnalysisRawData(RAWINPUT* pRawData);
+
+// 非公開
+private:
+	static size_t m_useCount;
 };
 
 //-----------------------------
@@ -469,29 +504,15 @@ class CInputRawInputKeyboard : public CInputKeyboard
 {
 // 公開
 public:
-	CInputRawInputKeyboard();
-	~CInputRawInputKeyboard();
+	CInputRawInputKeyboard() = default;
+	~CInputRawInputKeyboard() = default;
 
-	HRESULT Init(HINSTANCE hInstanse, HWND hWnd);
-	void Uninit(void);
-	void Update(void);
-
-	bool IsPress(size_t key);
-	bool IsTrigger(size_t key);
-	bool IsRelease(size_t key);
-	bool IsRepeat(size_t key);
+	HRESULT Init(HINSTANCE hInstanse, HWND hWnd) override;
+	void Uninit(void) override;
+	HRESULT GetState(span<BYTE> state) const override;
 
 // 非公開
 private:
-	BYTE m_KeyState[input::MAX_KEY];	 // キー状態
-	BYTE m_KeyStateOld[input::MAX_KEY];  // 前回キー状態
-
-	bool m_bKeyPress[input::MAX_KEY];	 // キー押下状態
-	bool m_bKeyTrigger[input::MAX_KEY];  // キー入力状態
-	bool m_bKeyRelease[input::MAX_KEY];  // キー離し状態
-	bool m_bKeyRepeat[input::MAX_KEY];   // キー長押し状態
-
-	int m_KeyPressTime[input::MAX_KEY];  // キー押下時間
 };
 
 //-----------------------------
@@ -501,36 +522,17 @@ class CInputRawInputMouse : public CInputMouse
 {
 	// 公開
 public:
-	CInputRawInputMouse() : m_MouseState{}, m_MouseStateOld{}, m_bPress{}, m_bTrigger{}, m_bRelease{}, m_bRepeat{}, m_PressTime{}, m_RepeatTime{}, m_Move{}, m_WheelMove{} {}
+	CInputRawInputMouse() = default;
 	~CInputRawInputMouse() = default;
 
-	HRESULT Init(HINSTANCE hInstanse, HWND hWnd);
-	void Uninit(void);
-	void Update(void);
-
-	bool IsPress(MOUSE_BUTTON button);
-	bool IsTrigger(MOUSE_BUTTON button);
-	bool IsRelease(MOUSE_BUTTON button);
-	bool IsRepeat(MOUSE_BUTTON button);
-	CInputMouseManager::MouseMove GetMove(void);
-	float GetWheel(void);
+	HRESULT Init(HINSTANCE hInstanse, HWND hWnd) override;
+	void Uninit(void) override;
+	HRESULT GetState(span<bool> state) const override;
+	HRESULT GetMove(input::Axis* pMove) const override;
+	HRESULT GetWheel(float* pWheel) const override;
 
 	// 非公開
 private:
-	LPDIRECTINPUTDEVICE8 m_pDevice;        // インプットデバイス
-
-	DIMOUSESTATE2 m_MouseState;	   // 状態
-	DIMOUSESTATE2 m_MouseStateOld; // 前回状態
-
-	bool m_bPress[Index(MOUSE_BUTTON::Max)];	           // ボタン押下状態
-	bool m_bTrigger[Index(MOUSE_BUTTON::Max)];          // ボタン入力状態
-	bool m_bRelease[Index(MOUSE_BUTTON::Max)];          // ボタン離し状態
-	bool m_bRepeat[Index(MOUSE_BUTTON::Max)];           // ボタン長押し状態
-	CInputMouseManager::MouseMove m_Move; // マウス移動量
-	float m_WheelMove;             // ホイール移動量
-
-	float m_PressTime[Index(MOUSE_BUTTON::Max)];  // ボタン押下時間
-	float m_RepeatTime[Index(MOUSE_BUTTON::Max)]; // ボタン押下時間
 };
 
 //-----------------------------
@@ -540,32 +542,18 @@ class CInputXInputController : public CInputController
 {
 // 公開
 public:
-	// クラスusing
-	using JOYKEY = input::JOYKEY;
-
-	CInputXInputController() :m_state{} {};
+	CInputXInputController() = default;
 	~CInputXInputController() = default;
 
-	HRESULT Init(void);
-	void Uninit(void);
-	void Update(void);
-
-	bool IsPress(JOYKEY key);
-	bool IsTrigger(JOYKEY key);
-	bool IsRelease(JOYKEY key);
-	bool IsRepeat(JOYKEY key);
-	float GetLeftStickAngle(void);
-	float GetRightStickAngle(void);
-	float GetLeftStickLength(void);
-	float GetRightStickLength(void);
-	void Vibrate(WORD wLeftMotorSpeed, WORD wRightMotorSpeed);
+	HRESULT Init(HINSTANCE hInstanse, HWND hWnd) override;
+	void Uninit(void) override;
+	HRESULT GetState(span<bool> state) const override;
+	HRESULT GetStick(span<input::Axis> axis) const override;
+	HRESULT GetTrigger(span<float> trigger) const override;
+	void Vibrate(WORD wLeftMotorSpeed, WORD wRightMotorSpeed)  override;
 
 // 非公開
 private:
-	static constexpr WORD VIBRATION_MAX = WORD(65535); // バイブレーション値
-	static constexpr SHORT STICK_NUM = SHORT(32767);   // スティックの値
-
-	XINPUT_STATE m_state;
 };
 
 //-----------------------------
@@ -597,36 +585,18 @@ private:
 //-----------------------------
 class CInputDirectInputKeyboard : public CInputKeyboard
 {
-	// 公開
+// 公開
 public:
-	CInputDirectInputKeyboard() : m_KeyState{}, m_KeyStateOld{}, m_bKeyPress{}, m_bKeyTrigger{}, m_bKeyRelease{}, m_bKeyRepeat{}, m_KeyPressTime{}, m_KeyRepeatTime{} {}
+	CInputDirectInputKeyboard() : m_pDevice{} {}
 	~CInputDirectInputKeyboard() = default;
 
-	HRESULT Init(HINSTANCE hInstanse, HWND hWnd);
-	void Uninit(void);
-	void Update(void);
+	HRESULT Init(HINSTANCE hInstanse, HWND hWnd) override;
+	void Uninit(void) override;
+	HRESULT GetState(span<BYTE> state) const override;
 
-	bool IsPress(size_t key);
-	bool IsTrigger(size_t key);
-	bool IsRelease(size_t key);
-	bool IsRepeat(size_t key);
-
-	// 非公開
+// 非公開
 private:
-	static constexpr size_t MAX_KEY = 256; // キー数
-
 	LPDIRECTINPUTDEVICE8 m_pDevice;        // インプットデバイス
-
-	BYTE m_KeyState[MAX_KEY];	  // キー状態
-	BYTE m_KeyStateOld[MAX_KEY];  // 前回キー状態
-
-	bool m_bKeyPress[MAX_KEY];	  // キー押下状態
-	bool m_bKeyTrigger[MAX_KEY];  // キー入力状態
-	bool m_bKeyRelease[MAX_KEY];  // キー離し状態
-	bool m_bKeyRepeat[MAX_KEY];   // キー長押し状態
-
-	float m_KeyPressTime[MAX_KEY];  // キー押下時間
-	float m_KeyRepeatTime[MAX_KEY]; // キー押下時間
 };
 
 //-----------------------------
@@ -636,19 +606,14 @@ class CInputDirectInputMouse : public CInputMouse
 {
 // 公開
 public:
-	CInputDirectInputMouse() : m_MouseState{}, m_MouseStateOld{}, m_bPress{}, m_bTrigger{}, m_bRelease{}, m_bRepeat{}, m_PressTime{}, m_RepeatTime{}, m_Move{}, m_WheelMove{} {}
+	CInputDirectInputMouse() : m_pDevice{}, m_MouseState{}, m_MouseStateOld{} {}
 	~CInputDirectInputMouse() = default;
 
-	HRESULT Init(HINSTANCE hInstanse, HWND hWnd);
-	void Uninit(void);
-	void Update(void);
-
-	bool IsPress(MOUSE_BUTTON button);
-	bool IsTrigger(MOUSE_BUTTON button);
-	bool IsRelease(MOUSE_BUTTON button);
-	bool IsRepeat(MOUSE_BUTTON button);
-	CInputMouseManager::MouseMove GetMove(void);
-	float GetWheel(void);
+	HRESULT Init(HINSTANCE hInstanse, HWND hWnd) override;
+	void Uninit(void) override;
+	HRESULT GetState(span<bool> state) const override;
+	HRESULT GetMove(input::Axis* pMove) const override;
+	HRESULT GetWheel(float* pWheel) const override;
 
 // 非公開
 private:
@@ -656,16 +621,6 @@ private:
 
 	DIMOUSESTATE2 m_MouseState;	   // 状態
 	DIMOUSESTATE2 m_MouseStateOld; // 前回状態
-
-	bool m_bPress[Index(MOUSE_BUTTON::Max)];	           // ボタン押下状態
-	bool m_bTrigger[Index(MOUSE_BUTTON::Max)];          // ボタン入力状態
-	bool m_bRelease[Index(MOUSE_BUTTON::Max)];          // ボタン離し状態
-	bool m_bRepeat[Index(MOUSE_BUTTON::Max)];           // ボタン長押し状態
-	CInputMouseManager::MouseMove m_Move; // マウス移動量
-	float m_WheelMove;             // ホイール移動量
-
-	float m_PressTime[Index(MOUSE_BUTTON::Max)];  // ボタン押下時間
-	float m_RepeatTime[Index(MOUSE_BUTTON::Max)]; // ボタン押下時間
 };
 
 //-----------------------------
@@ -678,37 +633,12 @@ public:
 	CInputDirectInputController() : m_pDevice{}, m_state{}, m_effect{}, m_sName{}, m_pDiInstance{} {}
 	~CInputDirectInputController() = default;
 
-	HRESULT Init(HINSTANCE hInstanse, HWND hWnd);
-	void Uninit(void);
-	void Update(void);
-
-	bool IsPress(Index key);
-	bool IsTrigger(Index key);
-	bool IsRelease(Index key);
-	bool IsRepeat(Index key);
-	float GetLeftStickAngle();
-	float GetRightStickAngle();
-	float GetLeftStickLength();
-	float GetRightStickLength();
-	float GetSlider(int nSlider);
-	bool IsPressUp(int nPov = 0);
-	bool IsPressDown(int nPov = 0);
-	bool IsPressLeft(int nPov = 0);
-	bool IsPressRight(int nPov = 0);
-	bool IsTriggerUp(int nPov = 0);
-	bool IsTriggerDown(int nPov = 0);
-	bool IsTriggerLeft(int nPov = 0);
-	bool IsTriggerRight(int nPov = 0);
-	bool IsReleaseUp(int nPov = 0);
-	bool IsReleaseDown(int nPov = 0);
-	bool IsReleaseLeft(int nPov = 0);
-	bool IsReleaseRight(int nPov = 0);
-	bool IsRepeatUp(int nPov = 0);
-	bool IsRepeatDown(int nPov = 0);
-	bool IsRepeatLeft(int nPov = 0);
-	bool IsRepeatRight(int nPov = 0);
-	void Vibrate(LONG lMotorPower);
-	void VibrateStop();
+	HRESULT Init(HINSTANCE hInstanse, HWND hWnd) override;
+	void Uninit(void) override;
+	HRESULT GetState(span<bool> state) const override;
+	HRESULT GetStick(span<input::Axis> axis) const override;
+	HRESULT GetTrigger(span<float> trigger) const override;
+	void Vibrate(WORD wLeftMotorSpeed, WORD wRightMotorSpeed)  override;
 
 	// 非公開
 private:

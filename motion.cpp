@@ -8,6 +8,8 @@
 #include "manager.h"
 #include "model.h"
 
+using namespace motion; // モーション空間の使用
+
 //----------------------------------------------------
 //
 // モデルクラス

@@ -21,6 +21,8 @@
 #include "object3D.h"
 #include "motion.h"
 
+using namespace DirectX3D; // DirectX3D空間の使用
+
 //---------------------------------------
 //
 // プレイヤークラス
@@ -60,7 +62,7 @@ HRESULT CPlayer::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float
 {
 	CObject::Init(TYPE::Player); // 親の初期化
 
-	SetCollision(true); // 当たり判定をする	
+	SetCollision(true); // 当たり判定をする
 
 	m_hierarchy = CHierarchyManager::GetInstance().GetHierarchy(Index(HIERARCHYTAG::Player)); // モデルの階層構造を取得
 	m_modelID.resize(m_hierarchy.size());
@@ -85,7 +87,7 @@ HRESULT CPlayer::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(CManager::GetRenderer().GetDxScreenSize(&screenSize)))
+	if (FAILED(CManager::GetRenderer().GetViewportSize(&screenSize)))
 	{
 		return E_FAIL;
 	}
@@ -99,6 +101,8 @@ HRESULT CPlayer::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float
 
 	m_fSpeed = fSpeed;             // ポリゴンの移動速度
 	m_fRotSpeed = fRotSpeed;       // ポリゴンの回転速度
+
+	SetAfterimage(true);
 
 	return S_OK;
 }
@@ -181,8 +185,8 @@ void CPlayer::Update(void)
 		//	fAngle = 0.0f;
 		//}
 
-		move.x += 10.0f * deltaTime; // 重力をかける
-		move.z -= 10.0f * deltaTime; // 重力をかける
+		move.x += 10.0f * deltaTime;  // 重力をかける
+		move.z += -10.0f * deltaTime; // 重力をかける
 
 		move.y += -10.0f * deltaTime; // 重力をかける
 		AddPosition(move);
@@ -253,25 +257,10 @@ void CPlayer::Draw(void)
 	if (pDevice == nullptr) return;
 
 	Transform transform = GetTransform();
-	D3DXMATRIX mtxRot{}, mtxTrans{}, mtxScale{};//計算マトリックス
-
-	//マトリックス初期化
-	D3DXMatrixIdentity(&m_mtxWorld);
-
-	//大きさの反映
-	D3DXMatrixScaling(&mtxScale, transform.scale.x, transform.scale.y, transform.scale.z);
-	D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxScale);
-
-	//向きの反映
-	D3DXMatrixRotationYawPitchRoll(&mtxRot, transform.rot.y, transform.rot.x, transform.rot.z);
-	D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxRot);
-
-	//位置の計算
-	D3DXMatrixTranslation(&mtxTrans, transform.pos.x, transform.pos.y, transform.pos.z);
-	D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxTrans);
+	transform.SetMatrix();
 
 	//ワールドマトリックスの設定
-	pDevice->SetTransform(D3DTS_WORLD, &m_mtxWorld);
+	pDevice->SetTransform(D3DTS_WORLD, &transform.mtxWorld);
 
 	// モデルの描画
 	for (size_t cntModel = 0; cntModel < m_hierarchy.size(); cntModel++)

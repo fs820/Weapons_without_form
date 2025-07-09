@@ -14,12 +14,12 @@
 //------------------------
 
 // 静的メンバ変数
-LPD3DXFONT CDebugProc::m_pFont{};                                // フォントポインタ
-string CDebugProc::m_sDebug[Index(MODE::Max)]{};                         // 文字列
-D3DXCOLOR CDebugProc::m_color{ D3DXCOLOR(1.0f,1.0f,1.0f,1.0f) }; // 色
-UINT CDebugProc::m_flag{ DT_LEFT | DT_TOP | DT_WORDBREAK };      // 表示方法
-bool CDebugProc::m_bDraw{ true };                                // 辨官するか
-CDebugProc::MODE CDebugProc::m_drawMode{};                       // 表示するモード
+LPD3DXFONT CDebugProc::m_pFont{};                                    // フォントポインタ
+array<string, Index8(CDebugProc::MODE::Max)> CDebugProc::m_sDebug{}; // 文字列
+D3DXCOLOR CDebugProc::m_color{ D3DXCOLOR(1.0f,1.0f,1.0f,1.0f) };     // 色
+UINT CDebugProc::m_flag{ DT_LEFT | DT_TOP | DT_WORDBREAK };          // 表示方法
+bool CDebugProc::m_bDraw{ true };                                    // 辨官するか
+CDebugProc::MODE CDebugProc::m_drawMode{};                           // 表示するモード
 
 //---------------------
 // 初期化
@@ -64,7 +64,7 @@ void CDebugProc::Draw(void)
 	if (m_bDraw)
 	{// 表示状態
 		D3DXVECTOR2 screenSize{};
-		CManager::GetRenderer().GetDxScreenSize(&screenSize);
+		CManager::GetRenderer().GetViewportSize(&screenSize);
 		RECT rect{ 0,0,LONG(screenSize.x),LONG(screenSize.y) };
 
 		m_pFont->DrawText(nullptr, m_sDebug[Index(m_drawMode)].c_str(), -1, &rect, m_flag, D3DCOLOR_COLORVALUE(m_color.r, m_color.g, m_color.b, m_color.a));

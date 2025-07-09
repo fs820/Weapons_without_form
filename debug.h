@@ -42,10 +42,10 @@ public:
 
 // 非公開
 private:
-	static LPD3DXFONT m_pFont;        // フォントポインタ
-	static string m_sDebug[Index(MODE::Max)]; // 表示文字列
-	static D3DXCOLOR m_color;         // 文字色
-	static UINT m_flag;               // DrawText設定
-	static bool m_bDraw;              // 表示切替
-	static MODE m_drawMode;           // 表示するモード
+	static LPD3DXFONT m_pFont;                        // フォントポインタ
+	static array<string, Index8(MODE::Max)> m_sDebug; // 表示文字列
+	static D3DXCOLOR m_color;                         // 文字色
+	static UINT m_flag;                               // DrawText設定
+	static bool m_bDraw;                              // 表示切替
+	static MODE m_drawMode;                           // 表示するモード
 };

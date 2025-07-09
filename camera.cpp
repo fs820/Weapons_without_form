@@ -9,6 +9,8 @@
 #include "input.h"
 #include "player.h"
 
+using namespace camera; // カメラ空間の使用
+
 //-----------------------------
 // 
 // カメラクラス
@@ -20,28 +22,19 @@
 //----------------------
 void CCamera::Init(void)
 {
-	D3DXVECTOR2 screenSize{};
-	CManager::GetRenderer().GetDxScreenSize(&screenSize);
-
 	for (int nCount = 0; nCount < CAMERA_XNUM * CAMERA_YNUM; nCount++)
 	{
 		//カメラ設定
-		m_camera[nCount].posV = D3DXVECTOR3(0.0f, 300.0f, -400.0f);
-		m_camera[nCount].posVDest = D3DXVECTOR3(0.0f, 300.0f, -400.0f);
-		m_camera[nCount].posR = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
-		m_camera[nCount].posRDest = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
+		m_camera[nCount].posV = D3DXVECTOR3(0.0f, 200.0f, -300.0f);
+		m_camera[nCount].posVDest = D3DXVECTOR3(0.0f, 200.0f, -300.0f);
+		m_camera[nCount].posR = D3DXVECTOR3(0.0f, 100.0f, 0.0f);
+		m_camera[nCount].posRDest = D3DXVECTOR3(0.0f, 100.0f, 0.0f);
 		m_camera[nCount].posU = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
 
 		m_camera[nCount].rot = D3DXVECTOR3(-atan2f(150.0f, 300.0f), 0.0f, 0.0f);
 		m_camera[nCount].fDistance = sqrtf((m_camera[nCount].posR.x - m_camera[nCount].posV.x) * (m_camera[nCount].posR.x - m_camera[nCount].posV.x) + (m_camera[nCount].posR.y - m_camera[nCount].posV.y) * (m_camera[nCount].posR.y - m_camera[nCount].posV.y) + (m_camera[nCount].posR.z - m_camera[nCount].posV.z) * (m_camera[nCount].posR.z - m_camera[nCount].posV.z));
 		m_camera[nCount].fDistanceMin = CAMERA_DISTANCE_MIN;
 		m_camera[nCount].fDistanceMax = CAMERA_DISTANCE_MAX;
-		m_camera[nCount].viewport.X = (nCount % CAMERA_XNUM) * (DWORD)screenSize.x / CAMERA_XNUM;
-		m_camera[nCount].viewport.Y = (nCount / CAMERA_XNUM) * (DWORD)screenSize.y / CAMERA_YNUM;
-		m_camera[nCount].viewport.Width = (DWORD)screenSize.x / CAMERA_XNUM;
-		m_camera[nCount].viewport.Height = (DWORD)screenSize.y / CAMERA_YNUM;
-		m_camera[nCount].viewport.MinZ = 0.0f;
-		m_camera[nCount].viewport.MaxZ = 1.0f;
 	}
 }
 
@@ -402,7 +395,7 @@ void CCamera::Set(Index idx)
 
 	// スクリーンサイズ
 	D3DXVECTOR2 screenSize{};
-	CManager::GetRenderer().GetDxScreenSize(&screenSize);
+	CManager::GetRenderer().GetViewportSize(&screenSize);
 
 	//プロジェクションマトリックスの作成
 	D3DXMatrixPerspectiveFovLH
@@ -416,9 +409,6 @@ void CCamera::Set(Index idx)
 
 	//プロジェクションマトリックスの設定
 	pDevice->SetTransform(D3DTS_PROJECTION, &m_camera[idx].mtxProjection);
-
-	// ビューポートの設定
-	pDevice->SetViewport(&m_camera[idx].viewport);
 }
 
 //-------------------

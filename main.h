@@ -21,6 +21,7 @@
 #include <set>           // 一意の値
 #include <filesystem>    // ファイル管理
 #include <array>         // 配列
+#include <span>          // 連続データの参照
 
 #include "common.h"    // 汎用定義
 
@@ -36,12 +37,14 @@ using std::unordered_map;    // 連想(ペア)配列
 using std::set;              // 一意の配列
 using std::optional;         // エラー対応
 using std::array;            // 配列
+using std::span;             // 連続データの参照
 using std::logic_error;      // 論理エラー
 using std::exception;        // 基本例外
 using std::bit_cast;         // ビット単位のキャスト
 using std::clamp;            // clamp
 using std::max;              // max
 using std::min;              // min
+using std::swap;             // swap
 using std::nullopt;          // null
 
 //-------------------------------------------------
@@ -118,7 +121,6 @@ private:
 	static float m_deltaTime;   // フレーム時間
 	static bool m_bStop;        // ストップフラグ
 	static float m_gameSpeed;   // ゲームスピード
-
 };
 
 

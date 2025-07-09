@@ -162,8 +162,8 @@ HRESULT CManager::Init(HINSTANCE hInstance, HWND hWnd, BOOL bWindow)
 	//// インプット
 	//if (FAILED(CInput::GetInstance().Init(hInstance, hWnd)))return E_FAIL;
 
-	// サウンド
-	if (FAILED(CSoundManager::GetInstance().Init(CMain::GethWnd())))return E_FAIL;
+	//// サウンド
+	//if (FAILED(CSoundManager::GetInstance().Init(CMain::GethWnd())))return E_FAIL;
 
 	// デバック表示
 	if (FAILED(CDebugProc::Init()))return E_FAIL;
@@ -342,13 +342,15 @@ void CManager::Update(void)
 //---------------
 // 描画
 //---------------
-void CManager::Draw(void)
+HRESULT CManager::Draw(void)
 {
 	// レンダラーの描画
 	if (m_pRenderer != nullptr)
 	{
-		m_pRenderer->Draw();
+		if (FAILED(m_pRenderer->Draw())) { return E_FAIL; }
 	}
+
+	return S_OK;
 }
 
 //-------------------
@@ -637,7 +639,7 @@ HRESULT CManager::LoadHierarchy(void)
 					offSet[cntOffSet] = 0.0f; // デフォルト値
 				}
 			}
-			partsInfo.offSet = Vector3(offSet[X], offSet[Y], offSet[Z]); // モデルのインデックスを追加
+			partsInfo.offSet = { offSet[X], offSet[Y], offSet[Z] }; // モデルのインデックスを追加
 
 			hierarchy.push_back(partsInfo); // パーツ情報を追加
 			cnt++; // 次のブロックへ
@@ -684,7 +686,7 @@ HRESULT CManager::StartGame(void)
 	}
 
 	// 3D
-	m_p3DObject = CObject3D::Create(D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(1.0f, 1.0f, 1.0f), CObject::TYPE::None);
+	m_p3DObject = CObject3D::Create(D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(1.0f, 1.0f, 1.0f), CObject::TYPE::None, 2);
 	if (m_p3DObject==nullptr)
 	{
 		return E_POINTER;
@@ -697,20 +699,20 @@ HRESULT CManager::StartGame(void)
 	}
 
 	// Billboard
-	if (CObjectBillboard::Create(D3DXVECTOR3(0.0f, 10.0f, 10.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(1.0f, 1.0f, 1.0f), CObject::TYPE::None) == nullptr)
+	if (CObjectBillboard::Create(D3DXVECTOR3(0.0f, 10.0f, 10.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(1.0f, 1.0f, 1.0f), CObject::TYPE::None, 2) == nullptr)
 	{
 		return E_POINTER;
 	}
 
 	// タイム
-	m_pTime = CTime::Create(D3DXVECTOR3(0.5f, 0.05f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(1.0f, 1.0f, 1.0f), 2, 0.03f, 6);
+	m_pTime = CTime::Create(D3DXVECTOR3(0.5f, 0.05f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(1.0f, 1.0f, 1.0f), 2, 0.03f, 7);
 	if (m_pTime == nullptr)
 	{
 		return E_POINTER;
 	}
 
 	// スコア
-	m_pScore = CScore::Create(D3DXVECTOR3(0.9f, 0.05f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(1.0f, 1.0f, 1.0f), 5, 0.03f, 6);
+	m_pScore = CScore::Create(D3DXVECTOR3(0.9f, 0.05f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(1.0f, 1.0f, 1.0f), 5, 0.03f, 7);
 	if (m_pScore == nullptr)
 	{
 		return E_POINTER;
@@ -721,7 +723,7 @@ HRESULT CManager::StartGame(void)
 	m_pTime->SetTime(120); // 時間セット
 	m_pTime->CountDown(); // カウントダウン
 
-	CSoundManager::GetInstance().Play(CSoundManager::LABEL_TEST_BGM); // BGM再生
+	CSoundManager::GetInstance().Play(Index8(sound::LABEL::TestBgm)); // BGM再生
 
 	return S_OK;
 }

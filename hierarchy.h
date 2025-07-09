@@ -23,8 +23,6 @@ namespace hierarchy
 //----------------------------------------------
 class CHierarchyManager final
 {
-	// クラスusing
-	using PartsInfo = hierarchy::PartsInfo;
 // 公開
 public:
 	static CHierarchyManager& GetInstance(void)
@@ -36,12 +34,12 @@ public:
 	CHierarchyManager(const CHierarchyManager&) = delete;
 	CHierarchyManager& operator=(const CHierarchyManager&) = delete;
 
-	void Register(vector<PartsInfo> hierarchy) { m_hierarchyList.push_back(hierarchy); }
+	void Register(vector<hierarchy::PartsInfo> hierarchy) { m_hierarchyList.push_back(hierarchy); }
 	void Unregister(void) { m_hierarchyList.clear(); }
 
-	const vector<PartsInfo>& GetHierarchy(Index idx) const
+	const vector<hierarchy::PartsInfo>& GetHierarchy(Index idx) const
 	{
-		static const vector<PartsInfo> null{};
+		static const vector<hierarchy::PartsInfo> null{};
 		return (idx >= 0 && idx < m_hierarchyList.size()) ? m_hierarchyList[idx] : null;
 	}
 
@@ -50,5 +48,5 @@ private:
 	CHierarchyManager() : m_hierarchyList{} {}
 	~CHierarchyManager() = default;
 
-	vector<vector<PartsInfo>> m_hierarchyList; // 階層構造情報のリスト
+	vector<vector<hierarchy::PartsInfo>> m_hierarchyList; // 階層構造情報のリスト
 };

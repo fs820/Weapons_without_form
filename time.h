@@ -22,38 +22,38 @@ public:
 	virtual ~CTime() = default;
 
 	static CTime* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, size_t digits = 5, float space = 0.05f, int priority = 3);
-	static CTime* Create(Transform transform, size_t digits = 5, float space = 0.05f, int priority = 3);
+	static CTime* Create(DirectX::Transform transform, size_t digits = 5, float space = 0.05f, int priority = 3);
 
 	HRESULT Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale);
-	HRESULT Init(Transform transform);
+	HRESULT Init(DirectX::Transform transform);
 	void Uninit(void) override;
 	void Update(void) override;
 	void Draw(void) override;
 
-	void CountUp(void) { m_count = UP; }
-	void CountDown(void) { m_count = DOWN; }
-	void Stop(void) { m_count = NONE; }
+	void CountUp(void) { m_count = Count::Up; }
+	void CountDown(void) { m_count = Count::Down; }
+	void Stop(void) { m_count = Count::None; }
 
 	void SetTime(const float time);
 	void AddTime(const float time);
 	float GetTime(void) const { return m_fTime; }
-
+	
 	// 非公開
 private:
 	// カウント状態の列挙
-	using COUNT = enum
+	enum class Count : Index8
 	{
-		NONE = 0,
-		UP,
-		DOWN,
-		COUNT_MAX
+		None,
+		Up,
+		Down,
+		Max
 	};
 
 	void OnCollision(const CObject& other) override {};
 
-	const size_t m_digits;   // 桁数
-	const float m_space;     // 数字の間隔
-	CNumber* m_apNumber[32]; // 数字
-	float m_fTime;           // 時間
-	COUNT m_count;           // カウント状態
+	const size_t m_digits;          // 桁数
+	const float m_space;            // 数字の間隔
+	array<CNumber*, 32> m_apNumber; // 数字
+	float m_fTime;                  // 時間
+	Count m_count;                  // カウント状態
 };

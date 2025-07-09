@@ -9,6 +9,8 @@
 #include "manager.h"
 #include "texture.h"
 
+using namespace DirectX3D; // DirectX3D名前空間の使用
+
 //---------------------------------------
 //
 // オブジェクト3Dクラス

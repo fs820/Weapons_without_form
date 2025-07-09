@@ -8,6 +8,8 @@
 #include "renderer.h"
 #include "manager.h"
 
+using namespace DirectX3D; // DirectX3D空間の使用
+
 //---------------------------------------
 //
 // Effect
@@ -98,7 +100,7 @@ HRESULT CEffect::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, D3DXC
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(CManager::GetRenderer().GetDxScreenSize(&screenSize)))
+	if (FAILED(CManager::GetRenderer().GetViewportSize(&screenSize)))
 	{
 		return E_FAIL;
 	}
@@ -183,7 +185,7 @@ void CEffect::Update(void)
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(renderer.GetDxScreenSize(&screenSize)))
+	if (FAILED(renderer.GetViewportSize(&screenSize)))
 	{
 		return;
 	}

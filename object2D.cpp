@@ -8,6 +8,8 @@
 #include "renderer.h"
 #include "manager.h"
 
+using namespace DirectX2D; // DirectX2D名前空間の使用
+
 //---------------------------------------
 //
 // オブジェクト2Dクラス
@@ -77,7 +79,7 @@ HRESULT CObject2D::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYP
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(renderer.GetDxScreenSize(&screenSize)))
+	if (FAILED(renderer.GetViewportSize(&screenSize)))
 	{
 		return E_FAIL;
 	}
@@ -118,7 +120,7 @@ HRESULT CObject2D::Init(Transform transform, TYPE type)
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(renderer.GetDxScreenSize(&screenSize)))
+	if (FAILED(renderer.GetViewportSize(&screenSize)))
 	{
 		return E_FAIL;
 	}

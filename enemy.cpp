@@ -16,6 +16,8 @@
 #include "score.h"
 #include "player.h"
 
+using namespace DirectX3D; // DirectX3D空間の使用
+
 //---------------------------------------
 //
 // Enemy
@@ -114,7 +116,7 @@ HRESULT CEnemy::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, float 
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(CManager::GetRenderer().GetDxScreenSize(&screenSize)))
+	if (FAILED(CManager::GetRenderer().GetViewportSize(&screenSize)))
 	{
 		return E_FAIL;
 	}
@@ -178,7 +180,7 @@ void CEnemy::Update(void)
 
 	// スクリーンサイズの取得
 	D3DXVECTOR2 screenSize = {};
-	if (FAILED(renderer.GetDxScreenSize(&screenSize)))
+	if (FAILED(renderer.GetViewportSize(&screenSize)))
 	{
 		return;
 	}

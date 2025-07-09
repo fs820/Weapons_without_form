@@ -22,10 +22,10 @@ public:
 	virtual ~CScore() = default;
 
 	static CScore* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, size_t digits = 5, float space = 0.05f, int priority = 3);
-	static CScore* Create(Transform transform, size_t digits = 5, float space = 0.05f, int priority = 3);
+	static CScore* Create(DirectX::Transform transform, size_t digits = 5, float space = 0.05f, int priority = 3);
 
 	HRESULT Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale);
-	HRESULT Init(Transform transform);
+	HRESULT Init(DirectX::Transform transform);
 	void Uninit(void) override;
 	void Update(void) override;
 	void Draw(void) override;
@@ -38,9 +38,8 @@ public:
 private:
 	void OnCollision(const CObject& other) override {};
 
-	const size_t m_digits;   // 桁数
-	const float m_space;     // 数字の間隔
-	CNumber* m_apNumber[32]; // 数字
-	int m_nScore;            // スコア
-
+	const size_t m_digits;         // 桁数
+	const float m_space;           // 数字の間隔
+	array<CNumber*,32> m_apNumber; // 数字
+	int m_nScore;                  // スコア
 };
