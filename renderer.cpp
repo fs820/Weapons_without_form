@@ -188,26 +188,6 @@ void CRenderer::Update(void) const
 HRESULT CRenderer::Draw(void)
 {
 	//-----------------------------
-	// 背景
-	//-----------------------------
-	if (FAILED(ChangeTarget(RENDER_TARGET::BackGround))) { return E_FAIL; }
-	if (FAILED(m_pD3DDevice->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_RGBA(0, 0, 0, 0), 1.0f, 0))) { return E_FAIL; }
-
-	if (SUCCEEDED(m_pD3DDevice->BeginScene()))//描画開始
-	{
-		SetRender(); // 描画設定
-
-		CManager::GetCamera()->Set(0);
-		CObject::DrawPriority(0); // オブジェクトの描画
-		CObject::DrawPriority(1); // オブジェクトの描画
-		m_pD3DDevice->EndScene(); // 描画終了
-	}
-	else
-	{
-		return E_FAIL;
-	}
-
-	//-----------------------------
     // 残像
     //-----------------------------
 	if (FAILED(ChangeTarget(RENDER_TARGET::Afterimage))) { return E_FAIL; }
@@ -221,6 +201,26 @@ HRESULT CRenderer::Draw(void)
 		CManager::GetCamera()->Set(0);  // カメラ
 		CObject::DrawPriority(3, true); // 残像オブジェクトの描画
 		m_pD3DDevice->EndScene();       // 描画終了
+	}
+	else
+	{
+		return E_FAIL;
+	}
+
+	//-----------------------------
+	// 背景
+	//-----------------------------
+	if (FAILED(ChangeTarget(RENDER_TARGET::BackGround))) { return E_FAIL; }
+	if (FAILED(m_pD3DDevice->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_RGBA(0, 0, 0, 0), 1.0f, 0))) { return E_FAIL; }
+
+	if (SUCCEEDED(m_pD3DDevice->BeginScene()))//描画開始
+	{
+		SetRender(); // 描画設定
+
+		CManager::GetCamera()->Set(0);
+		CObject::DrawPriority(0); // オブジェクトの描画
+		CObject::DrawPriority(1); // オブジェクトの描画
+		m_pD3DDevice->EndScene(); // 描画終了
 	}
 	else
 	{
@@ -388,7 +388,7 @@ void CRenderer::SetRender(void) const
 	DWORD maxAniso = min(caps.MaxAnisotropy, static_cast<DWORD>(16));
 
 	// サンブラーステートの設定
-	for (size_t cntTex = 0; cntTex < 1; cntTex++)
+	for (DWORD cntTex = 0; cntTex < 1; cntTex++)
 	{
 		// フィルター設定
 		m_pD3DDevice->SetSamplerState(cntTex, D3DSAMP_MAXANISOTROPY, maxAniso);        // 異方性フィルタ
@@ -407,7 +407,7 @@ void CRenderer::SetRender(void) const
 	}
 
 	// テクスチャステージの設定
-	for (size_t cntTex = 0; cntTex < 1; cntTex++)
+	for (DWORD cntTex = 0; cntTex < 1; cntTex++)
 	{
 		//カラー
 		m_pD3DDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);   // 掛け算

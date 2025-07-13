@@ -24,7 +24,7 @@ Index CObjectX::m_modelIdx{};           // モデルタグ
 //------------------------------
 // 生成
 //------------------------------
-CObjectX* CObjectX::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority)
+CObjectX* CObjectX::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, Index priority)
 {
 	CObjectX* pObjectX = new CObjectX(priority); // インスタンス生成
 
@@ -49,7 +49,7 @@ CObjectX* CObjectX::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, 
 //------------------------------
 // 生成
 //------------------------------
-CObjectX* CObjectX::Create(Transform transform, TYPE type, int priority)
+CObjectX* CObjectX::Create(Transform transform, TYPE type, Index priority)
 {
 	CObjectX* pObjectX = new CObjectX(priority); // インスタンス生成
 

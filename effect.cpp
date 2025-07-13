@@ -68,7 +68,7 @@ void CEffect::Unload(void)
 //------------------------------
 // 生成
 //------------------------------
-CEffect* CEffect::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, int priority, D3DXCOLOR color, float fSpeed)
+CEffect* CEffect::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, Index priority, D3DXCOLOR color, float fSpeed)
 {
 	CEffect* pEffect = new CEffect(priority); // インスタンス生成
 

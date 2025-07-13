@@ -703,7 +703,7 @@ void CMain::RegisterAllInputDevices(void)
 
 		if (!inputDevices.empty())
 		{
-			if (RegisterRawInputDevices(inputDevices.data(), inputDevices.size(), sizeof(RAWINPUTDEVICE)))
+			if (RegisterRawInputDevices(inputDevices.data(), UINT(inputDevices.size()), sizeof(RAWINPUTDEVICE)))
 			{
 				DWORD error = GetLastError();
 				CDebugProc::Print(CDebugProc::MODE::Static, "Successfully registered %zu devices LastError:%d", inputDevices.size(), error);

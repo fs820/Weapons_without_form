@@ -87,7 +87,7 @@ public:
 	void SetRot(const D3DXVECTOR3 rot) { m_transform.rot = rot; }
 	void SetScale(const D3DXVECTOR3 scale) { m_transform.scale = scale; }
 	void SetOffSet(const D3DXVECTOR3 offSet) { m_offSet.Set(offSet); m_transform.pos = m_offSet.Get(); }
-	void SetParent(const int nIdxParent);
+	void SetParent(const Index idxParent);
 
 // ”ñŒöŠJ
 private:
@@ -147,7 +147,7 @@ public:
 	void SetScale(Index idx, const D3DXVECTOR3 scale) { if (idx >= 0 && idx < m_apModel.size())  m_apModel[idx]->SetScale(scale); }
 	void SetOffSet(Index idx, const D3DXVECTOR3 offSet) { if (idx >= 0 && idx < m_apModel.size())  m_apModel[idx]->SetOffSet(offSet); }
 
-	void SetParent(Index idx, const int nIdxParent) { if (idx >= 0 && idx < m_apModel.size())  m_apModel[idx]->SetParent(nIdxParent); }
+	void SetParent(Index idx, const Index idxParent) { if (idx >= 0 && idx < m_apModel.size())  m_apModel[idx]->SetParent(idxParent); }
 
 	size_t GetUseCount(Index tag) const { return (tag >= 0 && tag < m_aModelSource.size()) ? m_aModelSource[tag].countUse : INVALID_ID; }
 

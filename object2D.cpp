@@ -19,7 +19,7 @@ using namespace DirectX2D; // DirectX2D名前空間の使用
 //------------------------------
 // 生成
 //------------------------------
-CObject2D* CObject2D::Create(LPDIRECT3DTEXTURE9 pTexture, D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority)
+CObject2D* CObject2D::Create(LPDIRECT3DTEXTURE9 pTexture, D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, Index priority)
 {
 	CObject2D* pObject2D = new CObject2D(priority); // インスタンス生成
 
@@ -42,7 +42,7 @@ CObject2D* CObject2D::Create(LPDIRECT3DTEXTURE9 pTexture, D3DXVECTOR3 pos, D3DXV
 //------------------------------
 // 生成
 //------------------------------
-CObject2D* CObject2D::Create(LPDIRECT3DTEXTURE9 pTexture, Transform transform, TYPE type, int priority)
+CObject2D* CObject2D::Create(LPDIRECT3DTEXTURE9 pTexture, Transform transform, TYPE type, Index priority)
 {
 	CObject2D* pObject2D = new CObject2D(priority); // インスタンス生成
 

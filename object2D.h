@@ -16,11 +16,11 @@ class CObject2D : public CObject
 // ŒöŠJ
 public:
 	CObject2D() : m_pVtxBuff{} {}
-	CObject2D(int priority) : CObject(priority), m_pVtxBuff{} {}
+	CObject2D(Index priority) : CObject(priority), m_pVtxBuff{} {}
 	virtual ~CObject2D() = default;
 
-	static CObject2D* Create(LPDIRECT3DTEXTURE9 pTexture, D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority = 3);
-	static CObject2D* Create(LPDIRECT3DTEXTURE9 pTexture, DirectX::Transform transform, TYPE type, int priority = 3);
+	static CObject2D* Create(LPDIRECT3DTEXTURE9 pTexture, D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, Index priority = 3);
+	static CObject2D* Create(LPDIRECT3DTEXTURE9 pTexture, DirectX::Transform transform, TYPE type, Index priority = 3);
 
 	HRESULT Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type);
 	HRESULT Init(DirectX::Transform transform, TYPE type);

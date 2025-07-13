@@ -6,9 +6,9 @@
 //---------------------------------------
 #include"input.h"
 
-using namespace input; // インプット空間の使用
+#include <cstddef> // offsetof を使うために必要
 
-//#if 0
+using namespace input; // インプット空間の使用
 
 //----------------------------------
 //
@@ -213,7 +213,7 @@ void CInputKeyboardManager::Update(void)
 //------------------------------
 bool CInputKeyboardManager::IsPress(Index8 idx, BUTTON button)
 {
-	
+	return true;
 }
 
 //------------------------------
@@ -221,7 +221,7 @@ bool CInputKeyboardManager::IsPress(Index8 idx, BUTTON button)
 //------------------------------
 bool CInputKeyboardManager::IsTrigger(Index8 idx, BUTTON button)
 {
-	
+	return true;
 }
 
 //------------------------------
@@ -229,7 +229,7 @@ bool CInputKeyboardManager::IsTrigger(Index8 idx, BUTTON button)
 //------------------------------
 bool CInputKeyboardManager::IsRelease(Index8 idx, BUTTON button)
 {
-	
+	return true;
 }
 
 //------------------------------
@@ -237,7 +237,7 @@ bool CInputKeyboardManager::IsRelease(Index8 idx, BUTTON button)
 //------------------------------
 bool CInputKeyboardManager::IsRepeat(Index8 idx, BUTTON button)
 {
-	
+	return true;
 }
 
 //--------------------------
@@ -314,7 +314,7 @@ void CInputMouseManager::Update(void)
 //------------------------------
 bool CInputMouseManager::IsPress(Index8 idx, BUTTON button)
 {
-
+	return true;
 }
 
 //------------------------------
@@ -322,7 +322,7 @@ bool CInputMouseManager::IsPress(Index8 idx, BUTTON button)
 //------------------------------
 bool CInputMouseManager::IsTrigger(Index8 idx, BUTTON button)
 {
-
+	return true;
 }
 
 //------------------------------
@@ -330,7 +330,7 @@ bool CInputMouseManager::IsTrigger(Index8 idx, BUTTON button)
 //------------------------------
 bool CInputMouseManager::IsRelease(Index8 idx, BUTTON button)
 {
-
+	return true;
 }
 
 //------------------------------
@@ -338,7 +338,7 @@ bool CInputMouseManager::IsRelease(Index8 idx, BUTTON button)
 //------------------------------
 bool CInputMouseManager::IsRepeat(Index8 idx, BUTTON button)
 {
-
+	return true;
 }
 
 //--------------
@@ -346,7 +346,7 @@ bool CInputMouseManager::IsRepeat(Index8 idx, BUTTON button)
 //--------------
 Axis CInputMouseManager::GetAxis(Index8 idx)
 {
-
+	return Axis();
 }
 
 //----------------
@@ -354,7 +354,7 @@ Axis CInputMouseManager::GetAxis(Index8 idx)
 //----------------
 float CInputMouseManager::GetWheel(Index8 idx)
 {
-
+	return float{};
 }
 
 //------------------------------------
@@ -371,38 +371,50 @@ HRESULT CInputControllerManager::Init(HINSTANCE hInstanse, HWND hWnd)
 	CInputController* pController{}; // コントローラーポインタ
 
 	// X
-	do
-	{// ループ
+	XInputEnable(true); // XInput有効化
+	for (Index8 cnt = 0; cnt < 4u; cnt++)
+	{// XInput確認
 		if (pController != nullptr) return E_FAIL;  // null
 		pController = new CInputXInputController;   // XInput生成
 		if (pController == nullptr)  return E_FAIL; // 生成失敗
 
 		// 初期化
-		if (SUCCEEDED(pController->Init(hInstanse, hWnd)))
+		if (SUCCEEDED(pController->Init(hInstanse, hWnd, cnt)))
 		{// 成功
 			m_apController.push_back(pController); // コントローラー追加
 			pController = nullptr;                 // null
 			continue;                              // 続ける
 		}
 		SAFE_UNINIT(pController); // 捨てる
+	}
 
-		// Direct
-		if (pController != nullptr) return E_FAIL;     // null
-		pController = new CInputDirectInputController; // DirectInput生成
-		if (pController == nullptr)  return E_FAIL;    // 生成失敗
+	size_t XInputNum = m_apController.size(); // Xinputの数
+	if (XInputNum < 1)
+	{// Xinputコントローラーがなかった
+		XInputEnable(false); // XInput無効化
+	}
 
+	// Direct
+
+	// 仮登録
+	if (FAILED(CInputDirectInput::Register(hInstanse)))return E_FAIL;
+	// デバイス列挙
+	if (FAILED(CInputDirectInput::SetEnum(this)))return E_FAIL;
+	// 仮登録解除
+	CInputDirectInput::Unregister();
+
+	for (Index cnt = XInputNum; cnt < m_apController.size(); cnt++)
+	{// DirectInputを確認
 		// 初期化
-		if (SUCCEEDED(pController->Init(hInstanse, hWnd)))
-		{// 成功
-			m_apController.push_back(pController); // コントローラー追加
-			return S_OK;
+		if (FAILED(m_apController[cnt]->Init(hInstanse, hWnd)))
+		{// 失敗
+			SwapRemove(m_apController, cnt); // 削除
 		}
-		else
-		{
-			SAFE_UNINIT(pController); // 捨てる
-			break;
-		}
-	} while (true);
+	}
+
+	// メモリを合わせる希望
+	m_apController.shrink_to_fit();
+
 	return S_OK;
 }
 
@@ -412,6 +424,7 @@ HRESULT CInputControllerManager::Init(HINSTANCE hInstanse, HWND hWnd)
 void CInputControllerManager::Uninit(void)
 {
 	SAFE_UNINIT_ARRAY(m_apController); // コントローラーをすべて破棄
+	XInputEnable(false); // XInput無効化
 }
 
 //-------------------
@@ -430,7 +443,7 @@ void CInputControllerManager::Update(void)
 //-------------------
 bool CInputControllerManager::IsPress(Index idx, BUTTON button)
 {
-
+	return true;
 }
 
 //-------------------
@@ -438,7 +451,7 @@ bool CInputControllerManager::IsPress(Index idx, BUTTON button)
 //-------------------
 bool CInputControllerManager::IsTrigger(Index idx, BUTTON button)
 {
-
+	return true;
 }
 
 //-------------------
@@ -446,7 +459,7 @@ bool CInputControllerManager::IsTrigger(Index idx, BUTTON button)
 //-------------------
 bool CInputControllerManager::IsRelease(Index idx, BUTTON button)
 {
-
+	return true;
 }
 
 //-------------------
@@ -454,7 +467,7 @@ bool CInputControllerManager::IsRelease(Index idx, BUTTON button)
 //-------------------
 bool CInputControllerManager::IsRepeat(Index idx, BUTTON button)
 {
-
+	return true;
 }
 
 //-------------------
@@ -468,25 +481,44 @@ void CInputControllerManager::SetVibrate(Index idx, float fLeftPower, float fReg
 //-------------------
 // 初期化
 //-------------------
-bool CInputControllerManager::IsXInputControllerConnected(Index idx)
+bool CInputControllerManager::IsXInputControllerConnected(Index8 idx)
 {
+	XINPUT_STATE state{};
+	if (idx == INVALID_ID)
+	{
+		for (Index8 cnt = 0; cnt < 3; ++cnt)
+		{
+			if (XInputGetState(cnt, &state) == ERROR_SUCCESS)
+			{
+				return true;
+			}
+		}
 
+		return false;
+	}
+
+	return XInputGetState(idx, &state) == ERROR_SUCCESS;
 }
 
 //-------------------
 // 初期化
 //-------------------
-bool CInputControllerManager::IsDirectInputControllerConnected(Index idx)
+bool CInputControllerManager::IsDirectInputControllerConnected(Index8 idx)
 {
+	if (idx == INVALID_ID)
+	{
+		for (Index8 cnt = 0; cnt < m_apController.size(); ++cnt)
+		{
+			if (m_apController[cnt] != nullptr)
+			{
+				return true;
+			}
+		}
 
-}
+		return false;
+	}
 
-//-------------------
-// 初期化
-//-------------------
-string_view CInputControllerManager::ControllerName(Index idx)
-{
-
+	return m_apController[idx] != nullptr;
 }
 
 //--------------------------
@@ -500,19 +532,21 @@ string_view CInputControllerManager::ControllerName(Index idx)
 //------
 void CInputKeyboard::Update(void)
 {
-	array <BYTE, input::MAX_KEY> state{};
-	if (SUCCEEDED(GetState(state)))
-	{
-		for (Index8 cntKey = 0; cntKey < state.size(); cntKey++)
-		{
-			m_state[cntKey] = state[cntKey]; //一時的な情報を正規情報に渡す
+	m_keyOld = m_key; // 前回のフレームを保存
 
-			bool now = (m_state[cntKey] & 0x80) != 0;    // 今押しているかどうか
-			bool old = (m_stateOld[cntKey] & 0x80) != 0; // 前回押していたかどうか
+	array <bool, input::MAX_KEY> key{};
+	if (SUCCEEDED(GetKey(key)))
+	{
+		for (Index8 cntKey = 0; cntKey < key.size(); cntKey++)
+		{
+			m_key[cntKey] = key[cntKey]; //一時的な情報を正規情報に渡す
+
+			bool now = m_key[cntKey];    // 今押しているかどうか
+			bool old = m_keyOld[cntKey]; // 前回押していたかどうか
 
 			m_bPress[cntKey] = now;           // 押
 			m_bTrigger[cntKey] = now && !old; // 押下
-			m_bRelease[cntKey] = (!now && old && m_PressTime[cntKey] >= RELEASE_TIME) ? true : false; // リリース
+			m_bRelease[cntKey] = (!now && old && m_PressTime[cntKey] >= RELEASE_TIME); // リリース
 
 			if (m_bTrigger[cntKey] || m_bRelease[cntKey])
 			{// キーの変化
@@ -530,12 +564,10 @@ void CInputKeyboard::Update(void)
 					if (m_RepeatTime[cntKey] >= REPEAT_INTERVAL_TIME)
 					{// リピート間隔
 						m_RepeatTime[cntKey] = 0.0f;
-						m_bRepeat[cntKey] = now ? true : false;
+						m_bRepeat[cntKey] = now;
 					}
 				}
 			}
-
-			m_stateOld[cntKey] = state[cntKey]; //一時的な情報を正規情報に渡す
 		}
 	}
 }
@@ -551,20 +583,22 @@ void CInputKeyboard::Update(void)
 //------
 void CInputMouse::Update(void)
 {
-	// ボタンの状態を解析
-	array<bool, Index8(input::MOUSE_BUTTON::Max)> state{};
-	if (SUCCEEDED(GetState(state)))
-	{
-		for (Index8 cntKey = 0; cntKey < state.size(); cntKey++)
-		{
-			m_state[cntKey] = state[cntKey]; //一時的な情報を正規情報に渡す
+	m_buttonOld = m_button; // 前回のフレームを保存
 
-			bool now = m_state[cntKey];    // 今押しているかどうか
-			bool old = m_stateOld[cntKey]; // 前回押していたかどうか
+	// ボタンの状態を解析
+	array<bool, Index8(input::MOUSE_BUTTON::Max)> button{};
+	if (SUCCEEDED(GetButton(button)))
+	{
+		for (Index8 cntKey = 0; cntKey < button.size(); cntKey++)
+		{
+			m_button[cntKey] = button[cntKey]; //一時的な情報を正規情報に渡す
+
+			bool now = m_button[cntKey];    // 今押しているかどうか
+			bool old = m_buttonOld[cntKey]; // 前回押していたかどうか
 
 			m_bPress[cntKey] = now;           // 押
 			m_bTrigger[cntKey] = now && !old; // 押下
-			m_bRelease[cntKey] = (!now && old && m_PressTime[cntKey] >= RELEASE_TIME) ? true : false; // リリース
+			m_bRelease[cntKey] = (!now && old && m_PressTime[cntKey] >= RELEASE_TIME); // リリース
 
 			if (m_bTrigger[cntKey] || m_bRelease[cntKey])
 			{// キーの変化
@@ -582,12 +616,10 @@ void CInputMouse::Update(void)
 					if (m_RepeatTime[cntKey] >= REPEAT_INTERVAL_TIME)
 					{// リピート間隔
 						m_RepeatTime[cntKey] = 0.0f;
-						m_bRepeat[cntKey] = now ? true : false;
+						m_bRepeat[cntKey] = now;
 					}
 				}
 			}
-
-			m_stateOld[cntKey] = state[cntKey]; //一時的な情報を正規情報に渡す
 		}
 	}
 
@@ -606,20 +638,22 @@ void CInputMouse::Update(void)
 //------
 void CInputController::Update(void)
 {
-	// ボタンの状態を解析
-	array<bool, Index8(input::CONTROLLER_BUTTON::Max)> state{};
-	if (SUCCEEDED(GetState(state)))
-	{
-		for (Index8 cntKey = 0; cntKey < state.size(); cntKey++)
-		{
-			m_state[cntKey] = state[cntKey]; //一時的な情報を正規情報に渡す
+	m_buttonOld = m_button; // 前回のフレームを保存
 
-			bool now = m_state[cntKey];    // 今押しているかどうか
-			bool old = m_stateOld[cntKey]; // 前回押していたかどうか
+	// ボタンの状態を解析
+	array<bool, Index8(input::CONTROLLER_BUTTON::Max)> button{};
+	if (SUCCEEDED(GetButton(button)))
+	{
+		for (Index8 cntKey = 0; cntKey < button.size(); cntKey++)
+		{
+			m_button[cntKey] = button[cntKey]; //一時的な情報を正規情報に渡す
+
+			bool now = m_button[cntKey];    // 今押しているかどうか
+			bool old = m_buttonOld[cntKey]; // 前回押していたかどうか
 
 			m_bPress[cntKey] = now;           // 押
 			m_bTrigger[cntKey] = now && !old; // 押下
-			m_bRelease[cntKey] = (!now && old && m_PressTime[cntKey] >= RELEASE_TIME) ? true : false; // リリース
+			m_bRelease[cntKey] = (!now && old && m_PressTime[cntKey] >= RELEASE_TIME); // リリース
 
 			if (m_bTrigger[cntKey] || m_bRelease[cntKey])
 			{// キーの変化
@@ -637,12 +671,10 @@ void CInputController::Update(void)
 					if (m_RepeatTime[cntKey] >= REPEAT_INTERVAL_TIME)
 					{// リピート間隔
 						m_RepeatTime[cntKey] = 0.0f;
-						m_bRepeat[cntKey] = now ? true : false;
+						m_bRepeat[cntKey] = now;
 					}
 				}
 			}
-
-			m_stateOld[cntKey] = state[cntKey]; //一時的な情報を正規情報に渡す
 		}
 	}
 
@@ -661,7 +693,7 @@ void CInputController::Update(void)
 //---------------------------------------------
 HRESULT CInputRawInput::AnalysisRawData(RAWINPUT* pRawData)
 {
-
+	return S_OK;
 }
 
 //--------------------------
@@ -691,53 +723,9 @@ void CInputRawInputKeyboard::Uninit(void)
 //-------------------------
 //更新処理
 //-------------------------
-HRESULT CInputRawInputKeyboard::GetState(span<BYTE> keyState) const
+HRESULT CInputRawInputKeyboard::GetKey(span<bool> key) const
 {
-	for (size_t nCntkey = 0; nCntkey < MAX_KEY; nCntkey++)
-	{
-		m_KeyStateOld[nCntkey] = m_KeyState[nCntkey]; //前回のキー情報を保存
-	}
-
-	BYTE KeyState[MAX_KEY];//一時入力格納
-	if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(KeyState), KeyState)))
-	{
-		for (size_t nCntkey = 0; nCntkey < MAX_KEY; nCntkey++)
-		{
-			m_KeyState[nCntkey] = KeyState[nCntkey]; //一時的な情報を正規情報に渡す
-
-			bool now = (m_KeyState[nCntkey] & 0x80) != 0;    // 今押しているかどうか
-			bool old = (m_KeyStateOld[nCntkey] & 0x80) != 0; // 前回押していたかどうか
-
-			m_bKeyPress[nCntkey] = now;           // 押
-			m_bKeyTrigger[nCntkey] = now && !old; // 押下
-			m_bKeyRelease[nCntkey] = (!now && old && m_KeyPressTime[nCntkey] >= CInput::RELEASE_TIME) ? true : false; // リリース
-
-			if (m_bKeyTrigger[nCntkey] || m_bKeyRelease[nCntkey])
-			{// キーの変化
-				// タイムの初期化
-				m_KeyPressTime[nCntkey] = 0.0f;
-				m_KeyRepeatTime[nCntkey] = 0.0f;
-			}
-			else if (m_bKeyPress[nCntkey])
-			{// 押している
-				// タイムの増加
-				m_KeyPressTime[nCntkey] += CMain::GetDeltaTimeGameSpeed();
-				if (m_KeyPressTime[nCntkey] >= CInput::REPEAT_START_TIME)
-				{// リピート中
-					m_KeyRepeatTime[nCntkey] += CMain::GetDeltaTimeGameSpeed();
-					if (m_KeyRepeatTime[nCntkey] >= CInput::REPEAT_INTERVAL_TIME)
-					{// リピート間隔
-						m_KeyRepeatTime[nCntkey] = 0.0f;
-						m_bKeyRepeat[nCntkey] = now ? true : false;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		m_pDevice->Acquire();//アクセス権限の取得
-	}
+	return S_OK;
 }
 
 //--------------------------
@@ -751,7 +739,6 @@ HRESULT CInputRawInputKeyboard::GetState(span<BYTE> keyState) const
 //--------------------
 HRESULT CInputRawInputMouse::Init(HINSTANCE hInstanse, HWND hWnd)
 {
-
 	return S_OK;
 }
 
@@ -766,48 +753,25 @@ void CInputRawInputMouse::Uninit(void)
 //-------------------------
 //更新処理
 //-------------------------
-HRESULT CInputRawInputMouse::GetState(span<bool> buttonState) const
+HRESULT CInputRawInputMouse::GetButton(span<bool> button) const
 {
-	m_MouseStateOld = m_MouseState; //前回のマウス情報を保存
+	return S_OK;
+}
 
-	DIMOUSESTATE2 MouseState;//マウス情報//一時入力格納
-	if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(DIMOUSESTATE2), &MouseState)))
-	{
-		m_MouseState = MouseState;//一時的な情報を正規情報に渡す
+//-------------------------
+//更新処理
+//-------------------------
+HRESULT CInputRawInputMouse::GetMove(input::Axis* pMove) const
+{
+	return S_OK;
+}
 
-		for (size_t nCntButton = 0; nCntButton < MAX; nCntButton++)
-		{
-			bool now = (m_MouseState.rgbButtons[nCntButton] & 0x80) != 0;    // 今押しているかどうか
-			bool old = (m_MouseStateOld.rgbButtons[nCntButton] & 0x80) != 0; // 前回押していたかどうか
-
-			m_bPress[nCntButton] = now;           // 押
-			m_bTrigger[nCntButton] = now && !old; // 押下
-			m_bRelease[nCntButton] = (!now && old && m_PressTime[nCntButton] >= RELEASE_TIME) ? true : false;
-
-			if (m_bTrigger[nCntButton] || m_bRelease[nCntButton])
-			{
-				m_PressTime[nCntButton] = 0;
-			}
-			else if (m_bPress[nCntButton])
-			{
-				m_PressTime[nCntButton]++;
-			}
-
-			m_bRepeat[nCntButton] = (now && m_PressTime[nCntButton] >= REPEAT_TIME) ? true : false;
-
-			m_Move[0] = (float)m_MouseState.lX;
-			m_Move[1] = (float)m_MouseState.lY;
-			m_Move[0] /= MOUSE_INA;
-			m_Move[1] /= MOUSE_INA;
-
-			m_WheelMove = (float)m_MouseState.lZ;
-			m_WheelMove /= MOUSE_WHEEL_INA;
-		}
-	}
-	else
-	{
-		m_pDevice->Acquire();//アクセス権限の取得
-	}
+//-------------------------
+//更新処理
+//-------------------------
+HRESULT CInputRawInputMouse::GetWheel(float* pWheel) const
+{
+	return S_OK;
 }
 
 //--------------------------
@@ -819,223 +783,160 @@ HRESULT CInputRawInputMouse::GetState(span<bool> buttonState) const
 //--------------------------------
 //初期化処理
 //--------------------------------
-HRESULT CInputXInputController::Init(HINSTANCE hInstanse, HWND hWnd)
+HRESULT CInputXInputController::Init(HINSTANCE hInstanse, HWND hWnd, Index8 idx)
 {
-	XInputEnable(true);
-	return S_OK;
-}
+	m_idx = idx; // インデックスを保存
 
-//------------------------
-//終了処理
-//------------------------
-void CInputXInputController::Uninit(void)
-{
-	XInputEnable(false);
+	XINPUT_STATE state;
+	if (XInputGetState(m_idx, &state) == ERROR_SUCCESS)
+	{
+		return S_OK;
+	}
+	return E_FAIL;
 }
 
 //------------------------
 //更新処理
 //------------------------
-HRESULT CInputXInputController::GetState(span<bool> state) const
+HRESULT CInputXInputController::GetButton(span<bool> button) const
 {
+	XINPUT_STATE state;
+	if (XInputGetState(m_idx, &state) == ERROR_SUCCESS)
+	{
+		SetTriggerButton(&state);
+		for (Index8 cntButton = 0; cntButton < Index8(JOYKEY::Max); cntButton++)
+		{
+			// 変換表からXInput番号からコントローラー共通の番号を取得する
+			Index8 controllerButton = Index8(ControllerMapList[Index8(CONTROLLER_TYPE::XInput)][cntButton]);
+
+			// JOYKEYからXInputようのMaskに変換
+			WORD mask = GetXInputMask(JOYKEY(cntButton));
+
+			// ボタンを押しているかどうかを取得する
+			button[controllerButton] = (state.Gamepad.wButtons & mask) != 0;
+		}
+		return S_OK;
+	}
+	return E_FAIL;
+}
+
+//------------------------
+//更新処理
+//------------------------
+HRESULT CInputXInputController::GetStick(span<input::Axis> axis) const
+{
+	XINPUT_STATE state;
+	if (XInputGetState(m_idx, &state) == ERROR_SUCCESS)
+	{
+		// 左スティック
+		axis[Left].x = float(state.Gamepad.sThumbLX);
+		axis[Left].y = float(state.Gamepad.sThumbLY);
+
+		// 右スティック
+		axis[Right].x = float(state.Gamepad.sThumbRX);
+		axis[Right].y = float(state.Gamepad.sThumbRY);
+
+		return S_OK;
+	}
+
+	return E_FAIL;
+}
+
+//------------------------
+//更新処理
+//------------------------
+HRESULT CInputXInputController::GetTrigger(span<float> trigger) const
+{
+	constexpr float TRIGGER_MAX = float(numeric_limits<BYTE>::max());
+
 	XINPUT_STATE XState;
-
-	if (XInputGetState(0, &XState) == ERROR_SUCCESS)
+	if (XInputGetState(m_idx, &XState) == ERROR_SUCCESS)
 	{
-		state = XState;
-	}
-}
-//----------------------------
-//キー長押し処理
-//----------------------------
-bool CInputXInputController::IsRepeat(JOYKEY key)
-{
-	static bool bOldJoy[CONTROLLER_MAX][JOYKEY_MAX] = { false };
-	static int KeyPutTime[CONTROLLER_MAX][JOYKEY_MAX] = { 0 };
-	BYTE Trigger = 0;
+		// 左スティック
+		trigger[Left] = float(XState.Gamepad.bLeftTrigger) / TRIGGER_MAX;
 
-	if (Controller == CONTROLLER_MAX)
-	{
-		for (int i = 0; i < CONTROLLER_MAX; i++)
-		{
-			if (key == JOYKEY_LT || key == JOYKEY_RT)
-			{
-				if (key == JOYKEY_LT)
-				{
-					Trigger = g_joykeyState[i].Gamepad.bLeftTrigger;
-				}
-				else
-				{
-					Trigger = g_joykeyState[i].Gamepad.bRightTrigger;
-				}
-			}
+		// 右スティック
+		trigger[Right] = float(XState.Gamepad.bRightTrigger) / TRIGGER_MAX;
 
-			if (bOldJoy[i][key] == true && (((g_joykeyState[i].Gamepad.wButtons & (0x01 << key)) ? true : false) == true || Trigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD))
-			{
-				return true;
-			}
-			else if (bOldJoy[i][key] == false && (((g_joykeyState[i].Gamepad.wButtons & (0x01 << key)) ? true : false) == true || Trigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD))
-			{
-				KeyPutTime[i][key]++;
-
-				if (KeyPutTime[i][key] >= REPEAT_TIME)
-				{
-					KeyPutTime[i][key] = 0;
-					bOldJoy[i][key] = true;
-				}
-			}
-			else
-			{
-				bOldJoy[i][key] = false;
-				KeyPutTime[i][key] = 0;
-			}
-		}
-
-		return false;
+		return S_OK;
 	}
 
-	if (key == JOYKEY_LT || key == JOYKEY_RT)
-	{
-		if (key == JOYKEY_LT)
-		{
-			Trigger = g_joykeyState[Controller].Gamepad.bLeftTrigger;
-		}
-		else
-		{
-			Trigger = g_joykeyState[Controller].Gamepad.bRightTrigger;
-		}
-	}
-
-	if (bOldJoy[Controller][key] == true && (((g_joykeyState[Controller].Gamepad.wButtons & (0x01 << key)) ? true : false) == true || Trigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD))
-	{
-		return true;
-	}
-	else if (bOldJoy[Controller][key] == false && (((g_joykeyState[Controller].Gamepad.wButtons & (0x01 << key)) ? true : false) == true || Trigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD))
-	{
-		KeyPutTime[Controller][key]++;
-
-		if (KeyPutTime[Controller][key] >= REPEAT_TIME)
-		{
-			KeyPutTime[Controller][key] = 0;
-			bOldJoy[Controller][key] = true;
-		}
-		return false;
-	}
-	else
-	{
-		bOldJoy[Controller][key] = false;
-		KeyPutTime[Controller][key] = 0;
-		return false;
-	}
+	return E_FAIL;
 }
 
-//-----------------
-// 左スティック角度
-//-----------------
-float CInputXInputController::GetLeftStickAngle(void)
+//------------------------
+// スライダー
+//------------------------
+HRESULT CInputXInputController::GetSlider(span<float> slider) const
 {
-	static float fStick[2] = { 0.0f };
-
-	switch (Stick)
+	XINPUT_STATE state;
+	if (XInputGetState(m_idx, &state) == ERROR_SUCCESS)
 	{
-	case STICK_LEFT:
-		fStick[0] = (float)g_joykeyState[Controller].Gamepad.sThumbLX;
-		fStick[1] = (float)g_joykeyState[Controller].Gamepad.sThumbLY;
-		break;
-	case STICK_RIGHT:
-		fStick[0] = (float)g_joykeyState[Controller].Gamepad.sThumbRX;
-		fStick[1] = (float)g_joykeyState[Controller].Gamepad.sThumbRY;
-		break;
+		// XInputのスライダーはスティックのY軸を入れておく
+		slider[Left] = float(state.Gamepad.sThumbLY) / float(STICK_NUM);
+		slider[Right] = float(state.Gamepad.sThumbRY) / float(STICK_NUM);
+
+		return S_OK;
 	}
 
-	fStick[0] /= STICK_NUM;
-	fStick[1] /= STICK_NUM;
-
-	return &fStick[0];
-}
-
-//-----------------
-// 左スティック角度
-//-----------------
-float CInputXInputController::GetRightStickAngle(void)
-{
-	static float fStick[2] = { 0.0f };
-
-	switch (Stick)
-	{
-	case STICK_LEFT:
-		fStick[0] = (float)g_joykeyState[Controller].Gamepad.sThumbLX;
-		fStick[1] = (float)g_joykeyState[Controller].Gamepad.sThumbLY;
-		break;
-	case STICK_RIGHT:
-		fStick[0] = (float)g_joykeyState[Controller].Gamepad.sThumbRX;
-		fStick[1] = (float)g_joykeyState[Controller].Gamepad.sThumbRY;
-		break;
-	}
-
-	fStick[0] /= STICK_NUM;
-	fStick[1] /= STICK_NUM;
-
-	return &fStick[0];
-}
-
-//-----------------
-// 左スティック倒し具合
-//-----------------
-float CInputXInputController::GetLeftStickLength(void)
-{
-	static float fStick[2] = { 0.0f };
-
-	switch (Stick)
-	{
-	case STICK_LEFT:
-		fStick[0] = (float)g_joykeyState[Controller].Gamepad.sThumbLX;
-		fStick[1] = (float)g_joykeyState[Controller].Gamepad.sThumbLY;
-		break;
-	case STICK_RIGHT:
-		fStick[0] = (float)g_joykeyState[Controller].Gamepad.sThumbRX;
-		fStick[1] = (float)g_joykeyState[Controller].Gamepad.sThumbRY;
-		break;
-	}
-
-	fStick[0] /= STICK_NUM;
-	fStick[1] /= STICK_NUM;
-
-	return &fStick[0];
-}
-
-//-----------------
-// 左スティック倒し具合
-//-----------------
-float CInputXInputController::GetRightStickLength(void)
-{
-	static float fStick[2] = { 0.0f };
-
-	switch (Stick)
-	{
-	case STICK_LEFT:
-		fStick[0] = (float)g_joykeyState[Controller].Gamepad.sThumbLX;
-		fStick[1] = (float)g_joykeyState[Controller].Gamepad.sThumbLY;
-		break;
-	case STICK_RIGHT:
-		fStick[0] = (float)g_joykeyState[Controller].Gamepad.sThumbRX;
-		fStick[1] = (float)g_joykeyState[Controller].Gamepad.sThumbRY;
-		break;
-	}
-
-	fStick[0] /= STICK_NUM;
-	fStick[1] /= STICK_NUM;
-
-	return &fStick[0];
+	return E_FAIL;
 }
 
 //----------------
 //振動
 //----------------
-void CInputXInputController::Vibrate(WORD wLeftMotorSpeed, WORD wRightMotorSpeed)
+void CInputXInputController::Vibrate(float leftMotorSpeed, float rightMotorSpeed)
 {
-	XINPUT_VIBRATION vibration{ wLeftMotorSpeed ,wRightMotorSpeed };
+	constexpr WORD VIBRATION_MAX = numeric_limits<WORD>::max();
+	leftMotorSpeed = clamp(leftMotorSpeed, 0.0f, 1.0f);
+	rightMotorSpeed = clamp(rightMotorSpeed, 0.0f, 1.0f);
+	XINPUT_VIBRATION vibration{ WORD(float(VIBRATION_MAX) * leftMotorSpeed) ,WORD(float(VIBRATION_MAX) * rightMotorSpeed) };
 	XInputSetState(0, &vibration);
+}
+
+//-----------------------------------------------
+// トリガーの値が閾値を超えたらボタンに入力に送る
+//-----------------------------------------------
+void CInputXInputController::SetTriggerButton(PXINPUT_STATE pState) const
+{
+	// トリガーの閾値を確認
+	if (pState->Gamepad.bLeftTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD)
+	{// 超えていたら
+		// wButtonsのビットに格納
+		pState->Gamepad.wButtons |= XINPUT_GAMEPAD_LEFT_TRIGGER;
+	}
+	if (pState->Gamepad.bRightTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD)
+	{// 超えていたら
+		// wButtonsのビットに格納
+		pState->Gamepad.wButtons |= XINPUT_GAMEPAD_RIGHT_TRIGGER;
+	}
+}
+
+//-----------------------------------------------
+// 列挙型をXInput本来のマクロに置き換える
+//-----------------------------------------------
+WORD CInputXInputController::GetXInputMask(input::JOYKEY key) const
+{
+	switch (key)
+	{
+	case JOYKEY::Up:    return XINPUT_GAMEPAD_DPAD_UP;
+	case JOYKEY::Down:  return XINPUT_GAMEPAD_DPAD_DOWN;
+	case JOYKEY::Left:  return XINPUT_GAMEPAD_DPAD_LEFT;
+	case JOYKEY::Right: return XINPUT_GAMEPAD_DPAD_RIGHT;
+	case JOYKEY::Start: return XINPUT_GAMEPAD_START;
+	case JOYKEY::Back:  return XINPUT_GAMEPAD_BACK;
+	case JOYKEY::L3:    return XINPUT_GAMEPAD_LEFT_THUMB;
+	case JOYKEY::R3:    return XINPUT_GAMEPAD_RIGHT_THUMB;
+	case JOYKEY::LB:    return XINPUT_GAMEPAD_LEFT_SHOULDER;
+	case JOYKEY::RB:    return XINPUT_GAMEPAD_RIGHT_SHOULDER;
+	case JOYKEY::LT:    return XINPUT_GAMEPAD_LEFT_TRIGGER;
+	case JOYKEY::RT:    return XINPUT_GAMEPAD_RIGHT_TRIGGER;
+	case JOYKEY::A:     return XINPUT_GAMEPAD_A;
+	case JOYKEY::B:     return XINPUT_GAMEPAD_B;
+	case JOYKEY::X:     return XINPUT_GAMEPAD_X;
+	case JOYKEY::Y:     return XINPUT_GAMEPAD_Y;
+	default:            return 0;
+	}
 }
 
 //----------------------------------
@@ -1050,7 +951,7 @@ size_t CInputDirectInput::m_useCount{};
 //-----------------
 // 初期化
 //-----------------
-HRESULT CInputDirectInput::Register(HINSTANCE hInstanse, HWND hWnd)
+HRESULT CInputDirectInput::Register(HINSTANCE hInstanse)
 {
 	//インプットオブジェクトの作成
 	if (m_pInput == nullptr)
@@ -1067,7 +968,10 @@ HRESULT CInputDirectInput::Register(HINSTANCE hInstanse, HWND hWnd)
 		}
 	}
 
-	m_useCount++; // DirectInput参照数
+	// 参照追加
+	m_useCount++;
+
+	return S_OK;
 }
 
 //-----------------
@@ -1080,21 +984,46 @@ void CInputDirectInput::Unregister(void)
 	if (m_useCount <= 0)
 	{// 参照数が0以下
 		//インプットオブジェクトの破棄
-		if (m_pInput != nullptr)
-		{
-			m_pInput->Release();
-			m_pInput = nullptr;
-		}
+		SAFE_RELEASE(m_pInput);
 	}
 }
 
 //-----------------
 // 列挙
 //-----------------
-HRESULT CInputDirectInput::SetEnum(void)
+HRESULT CInputDirectInput::SetEnum(CInputControllerManager* pControllerManager)
 {
-	// DirectInputデバイスを列挙
-	m_pInput->EnumDevices(DI8DEVCLASS_GAMECTRL, EnumDevicesCallback, nullptr, DIEDFL_ATTACHEDONLY);
+	//インプットオブジェクトの作成
+	if (m_pInput != nullptr)
+	{
+		// DirectInputデバイスを列挙
+		return m_pInput->EnumDevices(DI8DEVCLASS_GAMECTRL, EnumDevicesCallback, pControllerManager, DIEDFL_ATTACHEDONLY);
+	}
+	return E_FAIL;
+}
+
+//---------------------------
+//デバイス情報取得
+//---------------------------
+BOOL CALLBACK CInputDirectInput::EnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
+{
+	// CInputControllerManagerを抽出する
+	CInputControllerManager* pControllerManager = static_cast<CInputControllerManager*>(pvRef);
+
+	// DirectInputコントローラーの生成
+	CInputDirectInputController* pdController = new CInputDirectInputController;
+
+	// デバイス情報を渡す
+	pdController->SetInstance(lpddi);
+
+	// 基底クラスポインタにアップ (安全)
+	CInputController* pController = pdController;
+
+	// Managerに渡す
+	pControllerManager->Register(pController);
+
+	// 列挙を続行
+	return DIENUM_CONTINUE;
 }
 
 //--------------------------
@@ -1108,40 +1037,43 @@ HRESULT CInputDirectInput::SetEnum(void)
 //--------------------
 HRESULT CInputDirectInputKeyboard::Init(HINSTANCE hInstanse, HWND hWnd)
 {
-	// DirectInput母体への登録
-	CInputDirectInput::Register(hInstanse, hWnd);
-
-	//インプットデバイスの作成
-	if (FAILED(CInputDirectInput::GetDirectInput()->CreateDevice(GUID_SysKeyboard, &m_pDevice, nullptr)))
-	{
-		// DirectInput母体への登録解除
-		CInputDirectInput::Unregister();
-		return E_FAIL;
-	}
+	//インプットデバイスの作成 
+	if (FAILED(CInputDirectInput::GetDirectInput()->CreateDevice(GUID_SysKeyboard, &m_pDevice, nullptr))) return E_FAIL;
 
 	//フォーマット作成
 	if (FAILED(m_pDevice->SetDataFormat(&c_dfDIKeyboard)))
 	{
-		// DirectInput母体への登録解除
-		CInputDirectInput::Unregister();
+		// デバイスの破棄
+		SAFE_RELEASE(m_pDevice);
 		return E_FAIL;
 	}
 
 	// バッファリングを有効にする
 	if (FAILED(m_pDevice->SetCooperativeLevel(hWnd, (DISCL_FOREGROUND | DISCL_NONEXCLUSIVE))))
 	{
-		// DirectInput母体への登録解除
-		CInputDirectInput::Unregister();
+		// デバイスの破棄
+		SAFE_RELEASE(m_pDevice);
+		return E_FAIL;
+	}
+
+	// デバイス設定
+	if (FAILED(SetProperty()))
+	{
+		// デバイスの破棄
+		SAFE_RELEASE(m_pDevice);
 		return E_FAIL;
 	}
 
 	//アクセス権限の取得
 	if (FAILED(m_pDevice->Acquire()))
 	{
-		// DirectInput母体への登録解除
-		CInputDirectInput::Unregister();
+		// デバイスの破棄
+		SAFE_RELEASE(m_pDevice);
 		return E_FAIL;
 	}
+
+	// DirectInput母体への登録
+	CInputDirectInput::Register(hInstanse);
 
 	return S_OK;
 }
@@ -1166,53 +1098,44 @@ void CInputDirectInputKeyboard::Uninit(void)
 //-------------------------
 //更新処理
 //-------------------------
-HRESULT CInputDirectInputKeyboard::GetState(span<BYTE> state) const
+HRESULT CInputDirectInputKeyboard::GetKey(span<bool> key) const
 {
-	for (size_t nCntkey = 0; nCntkey < MAX_KEY; nCntkey++)
+	if (m_pDevice != nullptr)
 	{
-		m_KeyStateOld[nCntkey] = m_KeyState[nCntkey]; //前回のキー情報を保存
-	}
-
-	BYTE KeyState[MAX_KEY];//一時入力格納
-	if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(KeyState), KeyState)))
-	{
-		for (size_t nCntkey = 0; nCntkey < MAX_KEY; nCntkey++)
+		BYTE state[MAX_KEY];//一時入力格納
+		if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(state), state)))
 		{
-			m_KeyState[nCntkey] = KeyState[nCntkey]; //一時的な情報を正規情報に渡す
-
-			bool now = (m_KeyState[nCntkey] & 0x80) != 0;    // 今押しているかどうか
-			bool old = (m_KeyStateOld[nCntkey] & 0x80) != 0; // 前回押していたかどうか
-
-			m_bKeyPress[nCntkey] = now;           // 押
-			m_bKeyTrigger[nCntkey] = now && !old; // 押下
-			m_bKeyRelease[nCntkey] = (!now && old && m_KeyPressTime[nCntkey] >= CInput::RELEASE_TIME) ? true : false; // リリース
-
-			if (m_bKeyTrigger[nCntkey] || m_bKeyRelease[nCntkey])
-			{// キーの変化
-				// タイムの初期化
-				m_KeyPressTime[nCntkey] = 0.0f;
-				m_KeyRepeatTime[nCntkey] = 0.0f;
+			for (Index8 cntKey = 0; cntKey < key.size(); cntKey++)
+			{
+				key[cntKey] = (state[cntKey] & 0x80) != 0;
 			}
-			else if (m_bKeyPress[nCntkey])
-			{// 押している
-				// タイムの増加
-				m_KeyPressTime[nCntkey] += CMain::GetDeltaTimeGameSpeed();
-				if (m_KeyPressTime[nCntkey] >= CInput::REPEAT_START_TIME)
-				{// リピート中
-					m_KeyRepeatTime[nCntkey] += CMain::GetDeltaTimeGameSpeed();
-					if (m_KeyRepeatTime[nCntkey] >= CInput::REPEAT_INTERVAL_TIME)
-					{// リピート間隔
-						m_KeyRepeatTime[nCntkey] = 0.0f;
-						m_bKeyRepeat[nCntkey]= now ? true : false;
-					}
-				}
-			}
+			return S_OK;
+		}
+		else
+		{
+			m_pDevice->Acquire();//アクセス権限の取得
 		}
 	}
-	else
-	{
-		m_pDevice->Acquire();//アクセス権限の取得
-	}
+	return E_FAIL;
+}
+
+//------------------------
+// デバイス設定
+//------------------------
+HRESULT CInputDirectInputKeyboard::SetProperty(void)
+{
+	if (m_pDevice == nullptr)return E_FAIL;
+
+	// デバイス全体に設定
+	DIPROPDWORD dipdw;
+	dipdw.diph.dwSize = sizeof(DIPROPDWORD);
+	dipdw.diph.dwHeaderSize = sizeof(DIPROPHEADER);
+	dipdw.diph.dwHow = DIPH_DEVICE;
+	dipdw.diph.dwObj = 0;
+
+	// 16個のイベントを格納できるバッファを作成
+	dipdw.dwData = 16;
+	return m_pDevice->SetProperty(DIPROP_BUFFERSIZE, &dipdw.diph);
 }
 
 //--------------------------
@@ -1226,34 +1149,43 @@ HRESULT CInputDirectInputKeyboard::GetState(span<BYTE> state) const
 //--------------------
 HRESULT CInputDirectInputMouse::Init(HINSTANCE hInstanse, HWND hWnd)
 {
-	// DirectInput母体への登録
-	CInputDirectInput::Register(hInstanse, hWnd);
-
 	//インプットデバイスの作成
-	if (FAILED(CInputDirectInput::GetDirectInput()->CreateDevice(GUID_SysMouse, &m_pDevice, nullptr)))
-	{
-		// DirectInput母体への登録解除
-		CInputDirectInput::Unregister();
-		return E_FAIL;
-	}
+	if (FAILED(CInputDirectInput::GetDirectInput()->CreateDevice(GUID_SysMouse, &m_pDevice, nullptr)))return E_FAIL;
 
 	//フォーマット作成
 	if (FAILED(m_pDevice->SetDataFormat(&c_dfDIMouse2)))
 	{
-		// DirectInput母体への登録解除
-		CInputDirectInput::Unregister();
+		// デバイスの破棄
+		SAFE_RELEASE(m_pDevice);
 		return E_FAIL;
 	}
 
 	// バッファリングを有効にする
 	if (FAILED(m_pDevice->SetCooperativeLevel(hWnd, (DISCL_FOREGROUND | DISCL_NONEXCLUSIVE))))
 	{
-		// DirectInput母体への登録解除
-		CInputDirectInput::Unregister();
+		// デバイスの破棄
+		SAFE_RELEASE(m_pDevice);
 		return E_FAIL;
 	}
 
-	m_pDevice->Acquire();//アクセス権限の取得
+	// デバイス設定
+	if (FAILED(SetProperty()))
+	{
+		// デバイスの破棄
+		SAFE_RELEASE(m_pDevice);
+		return E_FAIL;
+	}
+
+	//アクセス権限の取得
+	if (FAILED(m_pDevice->Acquire()))
+	{
+		// デバイスの破棄
+		SAFE_RELEASE(m_pDevice);
+		return E_FAIL;
+	}
+
+	// DirectInput母体への登録
+	CInputDirectInput::Register(hInstanse);
 
 	return S_OK;
 }
@@ -1278,48 +1210,87 @@ void CInputDirectInputMouse::Uninit(void)
 //-------------------------
 //更新処理
 //-------------------------
-HRESULT CInputDirectInputMouse::GetState(span<bool> state) const
+HRESULT CInputDirectInputMouse::GetButton(span<bool> button) const
 {
-	m_MouseStateOld = m_MouseState; //前回のマウス情報を保存
-
-	DIMOUSESTATE2 MouseState;//マウス情報//一時入力格納
-	if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(DIMOUSESTATE2), &MouseState)))
+	if (m_pDevice != nullptr)
 	{
-		m_MouseState = MouseState;//一時的な情報を正規情報に渡す
-
-		for (size_t nCntButton = 0; nCntButton < MAX; nCntButton++)
+		DIMOUSESTATE2 state{};//マウス情報//一時入力格納
+		if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(DIMOUSESTATE2), &state)))
 		{
-			bool now = (m_MouseState.rgbButtons[nCntButton] & 0x80) != 0;    // 今押しているかどうか
-			bool old = (m_MouseStateOld.rgbButtons[nCntButton] & 0x80) != 0; // 前回押していたかどうか
-
-			m_bPress[nCntButton] = now;           // 押
-			m_bTrigger[nCntButton] = now && !old; // 押下
-			m_bRelease[nCntButton] = (!now && old && m_PressTime[nCntButton] >= RELEASE_TIME) ? true : false;
-
-			if (m_bTrigger[nCntButton] || m_bRelease[nCntButton])
+			for (Index8 cntButton = 0; cntButton < button.size(); cntButton++)
 			{
-				m_PressTime[nCntButton] = 0;
+				button[cntButton] = (state.rgbButtons[cntButton] & 0x80) != 0;
 			}
-			else if (m_bPress[nCntButton])
-			{
-				m_PressTime[nCntButton]++;
-			}
-
-			m_bRepeat[nCntButton] = (now && m_PressTime[nCntButton] >= REPEAT_TIME) ? true : false;
-
-			m_Move[0] = (float)m_MouseState.lX;
-			m_Move[1] = (float)m_MouseState.lY;
-			m_Move[0] /= MOUSE_INA;
-			m_Move[1] /= MOUSE_INA;
-
-			m_WheelMove = (float)m_MouseState.lZ;
-			m_WheelMove /= MOUSE_WHEEL_INA;
+			return S_OK;
+		}
+		else
+		{
+			m_pDevice->Acquire();//アクセス権限の取得
 		}
 	}
-	else
+	return E_FAIL;
+}
+
+//-------------------------
+//更新処理
+//-------------------------
+HRESULT CInputDirectInputMouse::GetMove(input::Axis* pMove) const
+{
+	if (m_pDevice != nullptr)
 	{
-		m_pDevice->Acquire();//アクセス権限の取得
+		DIMOUSESTATE2 state{};//マウス情報//一時入力格納
+		if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(DIMOUSESTATE2), &state)))
+		{
+			pMove->x = float(state.lX);
+			pMove->y = float(state.lY);
+			return S_OK;
+		}
+		else
+		{
+			m_pDevice->Acquire();//アクセス権限の取得
+		}
 	}
+	return E_FAIL;
+}
+
+//-------------------------
+//更新処理
+//-------------------------
+HRESULT CInputDirectInputMouse::GetWheel(float* pWheel) const
+{
+	if (m_pDevice!=nullptr)
+	{
+		DIMOUSESTATE2 state{};//マウス情報//一時入力格納
+		if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(DIMOUSESTATE2), &state)))
+		{
+			*pWheel = float(state.lZ);
+			return S_OK;
+		}
+		else
+		{
+			m_pDevice->Acquire();//アクセス権限の取得
+		}
+	}
+	return E_FAIL;
+}
+
+//------------------------
+// デバイス設定
+//------------------------
+HRESULT CInputDirectInputMouse::SetProperty(void)
+{
+	if (m_pDevice == nullptr)return E_FAIL;
+
+	// デバイス全体に設定
+	DIPROPDWORD dipdw;
+	dipdw.diph.dwSize = sizeof(DIPROPDWORD);
+	dipdw.diph.dwHeaderSize = sizeof(DIPROPHEADER);
+	dipdw.diph.dwHow = DIPH_DEVICE;
+	dipdw.diph.dwObj = 0;
+
+	// 16個のイベントを格納できるバッファを作成
+	dipdw.dwData = 16;
+	return m_pDevice->SetProperty(DIPROP_BUFFERSIZE, &dipdw.diph);
 }
 
 //-----------------------------
@@ -1331,17 +1302,44 @@ HRESULT CInputDirectInputMouse::GetState(span<bool> state) const
 //--------------------
 //初期化処理
 //--------------------
-HRESULT CInputDirectInputController::Init(HINSTANCE hInstanse, HWND hWnd)
+HRESULT CInputDirectInputController::Init(HINSTANCE hInstanse, HWND hWnd, Index8 idx)
 {
-	// DirectInput母体への登録
-	CInputDirectInput::Register(hInstanse, hWnd);
+	//インプットデバイスの作成
+	if (FAILED(CInputDirectInput::GetDirectInput()->CreateDevice(m_pDiInstance->guidInstance, &m_pDevice, nullptr)))return E_FAIL;
 
 	//フォーマット作成
-	m_pDevice->SetDataFormat(&c_dfDIJoystick);
+	if (FAILED(m_pDevice->SetDataFormat(&c_dfDIJoystick)))
+	{
+		// デバイスの破棄
+		SAFE_RELEASE(m_pDevice);
+		return E_FAIL;
+	}
 
-	m_pDevice->SetCooperativeLevel(hWnd, (DISCL_FOREGROUND | DISCL_EXCLUSIVE));
+	if (FAILED(m_pDevice->SetCooperativeLevel(hWnd, (DISCL_FOREGROUND | DISCL_EXCLUSIVE))))
+	{
+		// デバイスの破棄
+		SAFE_RELEASE(m_pDevice);
+		return E_FAIL;
+	}
 
-	m_pDevice->Acquire();//アクセス権限の取得
+	// デバイス設定
+	if (FAILED(SetProperty()))
+	{
+		// デバイスの破棄
+		SAFE_RELEASE(m_pDevice);
+		return E_FAIL;
+	}
+
+	//アクセス権限の取得
+	if (FAILED(m_pDevice->Acquire()))
+	{
+		// デバイスの破棄
+		SAFE_RELEASE(m_pDevice);
+		return E_FAIL;
+	}
+
+	// DirectInput母体への登録
+	CInputDirectInput::Register(hInstanse);
 
 	return S_OK;
 }
@@ -1352,7 +1350,7 @@ HRESULT CInputDirectInputController::Init(HINSTANCE hInstanse, HWND hWnd)
 void CInputDirectInputController::Uninit(void)
 {
 	//エフェクトデバイスの破棄
-	Vibrate(0, 0);
+	Vibrate(0);
 
 	// デバイスの破棄
 	if (m_pDevice != nullptr)
@@ -1369,370 +1367,109 @@ void CInputDirectInputController::Uninit(void)
 //-------------------------
 //更新処理
 //-------------------------
-HRESULT CInputDirectInputController::GetState(span<bool> state) const
+HRESULT CInputDirectInputController::GetButton(span<bool> button) const
 {
-	DIJOYSTATE  djoykeyState[CONTROLLER_MAX];//一時入力格納
-	int ControllerNum = 0;
-
-	for (int i = 0; i < CONTROLLER_MAX; i++)
+	if (m_pDevice != nullptr)
 	{
-		if (g_DevdJoypad[i] != nullptr)
+		DIJOYSTATE  state;// 入力格納
+		if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(DIJOYSTATE), &state)))
 		{
-			if (SUCCEEDED(g_DevdJoypad[i]->GetDeviceState(sizeof(DIJOYSTATE), &djoykeyState[i])))
+			for (Index cntButton = 0; cntButton < button.size(); cntButton++)
 			{
-				g_djoykeyState[i] = djoykeyState[i];//一時的な情報を正規情報に渡す
+				button[cntButton] = (state.rgbButtons[0] & 0x80) != 0;
 			}
-			else
-			{
-				ControllerNum++;
-			}
+			return S_OK;
 		}
 		else
 		{
-			ControllerNum++;
+			m_pDevice->Acquire();//アクセス権限の取得
 		}
 	}
-
-	if (g_DcontrollerNum!=(CONTROLLER_MAX-ControllerNum))
-	{
-		SetUnCon(true);
-		InputReSet();
-		// DirectInputデバイスを列挙
-		g_pinput->EnumDevices(DI8DEVCLASS_GAMECTRL, EnumDevicesCallback, nullptr, DIEDFL_ATTACHEDONLY);
-	}
-}
-
-//------------------------------
-//キー長押し処理
-//------------------------------
-bool CInputDirectInputController::IsRepeat(int key)
-{
-	static bool bOldkey[CONTROLLER_MAX][NUM_DIJOYKEY_MAX] = { false };
-	static int KeyPutTime[CONTROLLER_MAX][NUM_DIJOYKEY_MAX] = { 0 };
-
-	if (Controller == CONTROLLER_MAX)
-	{
-		for (int i = 0; i < CONTROLLER_MAX; i++)
-		{
-			if (bOldkey[i][key] == true && ((g_djoykeyState[i].rgbButtons[key] & 0x80) ? true : false) == true)
-			{
-				return true;
-			}
-			else if (bOldkey[i][key] == false && ((g_djoykeyState[i].rgbButtons[key] & 0x80) ? true : false) == true)
-			{
-				KeyPutTime[i][key]++;
-
-				if (KeyPutTime[i][key] >= REPEAT_TIME)
-				{
-					KeyPutTime[i][key] = 0;
-					bOldkey[i][key] = true;
-				}
-			}
-			else
-			{
-				bOldkey[i][key] = false;
-				KeyPutTime[i][key] = 0;
-			}
-		}
-
-		return false;
-	}
-
-	if (bOldkey[Controller][key] == true && ((g_djoykeyState[Controller].rgbButtons[key] & 0x80) ? true : false) == true)
-	{
-		return true;
-	}
-	else if (bOldkey[Controller][key] == false && ((g_djoykeyState[Controller].rgbButtons[key] & 0x80) ? true : false) == true)
-	{
-		KeyPutTime[Controller][key]++;
-
-		if (KeyPutTime[Controller][key] >= REPEAT_TIME)
-		{
-			KeyPutTime[Controller][key] = 0;
-			bOldkey[Controller][key] = true;
-		}
-		return false;
-	}
-	else
-	{
-		bOldkey[Controller][key] = false;
-		KeyPutTime[Controller][key] = 0;
-		return false;
-	}
-}
-
-//-----------------
-//スティック処理
-//-----------------
-float CInputDirectInputController::GetLeftStickAngle(void)
-{
-	static float fStick[2] = { 0.0f };
-
-	switch (Stick)
-	{
-	case STICK_LEFT:
-		fStick[0] = (float)g_djoykeyState[Controller].lX;
-		fStick[1] = (float)g_djoykeyState[Controller].lY;
-		break;
-	case STICK_RIGHT:
-		fStick[0] = (float)g_djoykeyState[Controller].lZ;
-		fStick[1] = (float)g_djoykeyState[Controller].lRz;
-		break;
-	}
-
-	fStick[0] /= STICK_NUM;
-	fStick[1] /= STICK_NUM;
-
-	fStick[0] += DSTICK_NUM;
-	fStick[1] += DSTICK_NUM;
-
-	return &fStick[0];
-}
-
-//----------------------
-//スライダー軸
-//----------------------
-float CInputDirectInputController::GetSlider(int nSlider)
-{
-	float fSlider = 0.0f;
-
-	fSlider = (float)g_djoykeyState[Controller].rglSlider[nSlider];
-
-	fSlider /= STICK_NUM;
-
-	fSlider += DSTICK_NUM;
-
-	return fSlider;
-}
-
-//------------------------
-//ハットスイッチ
-//------------------------
-bool CInputDirectInputController::IsPressUp(int nPov)
-{
-	float fPov = 0.0f;
-
-	if (Controller == CONTROLLER_MAX)
-	{
-		for (int i = 0; i < CONTROLLER_MAX; i++)
-		{
-			fPov = (float)g_djoykeyState[i].rgdwPOV[nPov];
-
-			if (fPov==fData)
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	fPov = (float)g_djoykeyState[Controller].rgdwPOV[nPov];
-
-	return (fPov == fData) ? true : false;
+	return E_FAIL;
 }
 
 //-------------------------
-//
+//更新処理
 //-------------------------
-bool GetdJoyPovTrigger(float fData, int nPov, CONTROLLER Controller)
+HRESULT CInputDirectInputController::GetStick(span<input::Axis> axis) const
 {
-	float fPov = 0.0f;
-	static bool bOldPov[CONTROLLER_MAX][POV_MAX][POV_SYS_MAX] = { false };
-
-	if (Controller == CONTROLLER_MAX)
+	if (m_pDevice != nullptr)
 	{
-		for (int i = 0; i < CONTROLLER_MAX; i++)
+		DIJOYSTATE  state;// 入力格納
+		if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(DIJOYSTATE), &state)))
 		{
-			fPov = (float)g_djoykeyState[i].rgdwPOV[nPov];
-
-			if (bOldPov[i][nPov][(int)(fData / POV_NUM)] == false && ((fPov == fData) ? true : false) == true)
-			{
-				bOldPov[i][nPov][(int)(fData / POV_NUM)] = true;
-				return true;
-			}
-			else if (bOldPov[i][nPov][(int)(fData / POV_NUM)] == true && ((fPov == fData) ? true : false) == false)
-			{
-				bOldPov[i][nPov][(int)(fData / POV_NUM)] = false;
-				return false;
-			}
-		}
-
-		return false;
-	}
-
-	fPov = (float)g_djoykeyState[Controller].rgdwPOV[nPov];
-
-	if (bOldPov[Controller][nPov][(int)(fData / POV_NUM)] == false && ((fPov == fData) ? true : false) == true)
-	{
-		bOldPov[Controller][nPov][(int)(fData / POV_NUM)] = true;
-		return true;
-	}
-	else if (bOldPov[Controller][nPov][(int)(fData / POV_NUM)] == true && ((fPov == fData) ? true : false) == false)
-	{
-		bOldPov[Controller][nPov][(int)(fData / POV_NUM)] = false;
-		return false;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-//-----------------------
-//
-//-----------------------
-bool GetdJoyPovRelease(float fData, int nPov, CONTROLLER Controller)
-{
-	float fPov = 0.0f;
-	static bool bOldPov[CONTROLLER_MAX][POV_MAX][POV_SYS_MAX] = { false };
-	static int PovPutTime[CONTROLLER_MAX][POV_MAX][POV_SYS_MAX] = { 0 };
-
-	if (Controller == CONTROLLER_MAX)
-	{
-		for (int i = 0; i < CONTROLLER_MAX; i++)
-		{
-			fPov = (float)g_djoykeyState[i].rgdwPOV[nPov];
-
-			if (bOldPov[i][nPov][(int)(fData / POV_NUM)] == true && ((fPov == fData) ? true : false) == false)
-			{
-				bOldPov[i][nPov][(int)(fData / POV_NUM)] = false;
-				if (PovPutTime[i][nPov][(int)(fData / POV_NUM)] >= RELEASE_TIME)
-				{
-					PovPutTime[i][nPov][(int)(fData / POV_NUM)] = 0;
-					return true;
-				}
-				else
-				{
-					PovPutTime[i][nPov][(int)(fData / POV_NUM)] = 0;
-					return false;
-				}
-			}
-			else if (bOldPov[i][nPov][(int)(fData / POV_NUM)] == false && ((fPov == fData) ? true : false) == true)
-			{
-				bOldPov[i][nPov][(int)(fData / POV_NUM)] = true;
-				return false;
-			}
-			else if (bOldPov[i][nPov][(int)(fData / POV_NUM)] == true && ((fPov == fData) ? true : false) == true)
-			{
-				PovPutTime[i][nPov][(int)(fData / POV_NUM)]++;
-				return false;
-			}
-		}
-
-		return false;
-	}
-
-	fPov = (float)g_djoykeyState[Controller].rgdwPOV[nPov];
-
-	if (bOldPov[Controller][nPov][(int)(fData / POV_NUM)] == true && ((fPov == fData) ? true : false) == false)
-	{
-		bOldPov[Controller][nPov][(int)(fData / POV_NUM)] = false;
-		if (PovPutTime[Controller][nPov][(int)(fData / POV_NUM)] >= RELEASE_TIME)
-		{
-			PovPutTime[Controller][nPov][(int)(fData / POV_NUM)] = 0;
-			return true;
+			axis[Left].x = float(state.lX) / float(DIRECTINPUT_TRIGGER_MAX);
+			axis[Left].y = float(state.lY) / float(DIRECTINPUT_TRIGGER_MAX);
+			axis[Right].x = float(state.lRx) / float(DIRECTINPUT_TRIGGER_MAX);
+			axis[Right].y = float(state.lRy) / float(DIRECTINPUT_TRIGGER_MAX);
+			return S_OK;
 		}
 		else
 		{
-			PovPutTime[Controller][nPov][(int)(fData / POV_NUM)] = 0;
-			return false;
+			m_pDevice->Acquire();//アクセス権限の取得
 		}
 	}
-	else if (bOldPov[Controller][nPov][(int)(fData / POV_NUM)] == false && ((fPov == fData) ? true : false) == true)
-	{
-		bOldPov[Controller][nPov][(int)(fData / POV_NUM)] = true;
-		return false;
-	}
-	else if (bOldPov[Controller][nPov][(int)(fData / POV_NUM)] == true && ((fPov == fData) ? true : false) == true)
-	{
-		PovPutTime[Controller][nPov][(int)(fData / POV_NUM)]++;
-		return false;
-	}
-	else
-	{
-		return false;
-	}
+	return E_FAIL;
 }
 
-//---------------------
-//
-//---------------------
-bool GetdJoyPovRepeat(float fData, int nPov, CONTROLLER Controller)
+//-------------------------
+//更新処理
+//-------------------------
+HRESULT CInputDirectInputController::GetTrigger(span<float> trigger) const
 {
-	float fPov = 0.0f;
-	static bool bOldPov[CONTROLLER_MAX][POV_MAX][POV_SYS_MAX] = { false };
-	static int PovPutTime[CONTROLLER_MAX][POV_MAX][POV_SYS_MAX] = { 0 };
-
-	if (Controller == CONTROLLER_MAX)
+	if (m_pDevice != nullptr)
 	{
-		for (int i = 0; i < CONTROLLER_MAX; i++)
+		DIJOYSTATE state{};//一時入力格納
+		if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(DIJOYSTATE), &state)))
 		{
-			fPov = (float)g_djoykeyState[i].rgdwPOV[nPov];
-
-			if (bOldPov[i][nPov][(int)(fData / POV_NUM)] == true && ((fPov == fData) ? true : false) == true)
-			{
-				return true;
-			}
-			else if (bOldPov[i][nPov][(int)(fData / POV_NUM)] == false && ((fPov == fData) ? true : false) == true)
-			{
-				PovPutTime[i][nPov][(int)(fData / POV_NUM)]++;
-
-				if (PovPutTime[i][nPov][(int)(fData / POV_NUM)] >= REPEAT_TIME)
-				{
-					PovPutTime[i][nPov][(int)(fData / POV_NUM)] = 0;
-					bOldPov[i][nPov][(int)(fData / POV_NUM)] = true;
-				}
-				return false;
-			}
-			else
-			{
-				bOldPov[i][nPov][(int)(fData / POV_NUM)] = false;
-				PovPutTime[i][nPov][(int)(fData / POV_NUM)] = 0;
-			}
-
-
+			trigger[Left] = float(state.lZ) / float(DIRECTINPUT_TRIGGER_MAX);
+			trigger[Left] = float(state.lRz) / float(DIRECTINPUT_TRIGGER_MAX);
+			return S_OK;
 		}
-
-		return false;
-	}
-
-	fPov = (float)g_djoykeyState[Controller].rgdwPOV[nPov];
-
-	if (bOldPov[Controller][nPov][(int)(fData / POV_NUM)] == true && ((fPov == fData) ? true : false) == true)
-	{
-		return true;
-	}
-	else if (bOldPov[Controller][nPov][(int)(fData / POV_NUM)] == false && ((fPov == fData) ? true : false) == true)
-	{
-		PovPutTime[Controller][nPov][(int)(fData / POV_NUM)]++;
-
-		if (PovPutTime[Controller][nPov][(int)(fData / POV_NUM)] >= REPEAT_TIME)
+		else
 		{
-			PovPutTime[Controller][nPov][(int)(fData / POV_NUM)] = 0;
-			bOldPov[Controller][nPov][(int)(fData / POV_NUM)] = true;
+			m_pDevice->Acquire();//アクセス権限の取得
 		}
-		return false;
 	}
-	else
+	return E_FAIL;
+}
+
+//-------------------------
+//更新処理
+//-------------------------
+HRESULT CInputDirectInputController::GetSlider(span<float> slider) const
+{
+	if (m_pDevice != nullptr)
 	{
-		bOldPov[Controller][nPov][(int)(fData / POV_NUM)] = false;
-		PovPutTime[Controller][nPov][(int)(fData / POV_NUM)] = 0;
-		return false;
+		DIJOYSTATE state{};//一時入力格納
+		if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(DIJOYSTATE), &state)))
+		{
+			// スライダー入力を取る
+			slider[Left] = float(state.rglSlider[Left]) / float(DIRECTINPUT_TRIGGER_MAX);
+			slider[Right] = float(state.rglSlider[Right]) / float(DIRECTINPUT_TRIGGER_MAX);
+			return S_OK;
+		}
+		else
+		{
+			m_pDevice->Acquire();//アクセス権限の取得
+		}
 	}
+	return E_FAIL;
 }
 
 //-------------
 //振動
 //-------------
-void CInputDirectInputController::Vibrate(WORD wLeftMotorSpeed, WORD wRightMotorSpeed)
+void CInputDirectInputController::Vibrate(float leftMotorSpeed, float rightMotorSpeed)
 {
 	if (m_effect != nullptr)
-	{
+	{// エフェクトを破棄
 		m_effect->Stop();
 		m_effect->Release();
 		m_effect = nullptr;
 	}
+
+	if (leftMotorSpeed < 0.000001f) return; // 0の時は生成しない
 
 	// フォースフィードバックのエフェクトを作成する
 	DIEFFECT effect;
@@ -1751,7 +1488,8 @@ void CInputDirectInputController::Vibrate(WORD wLeftMotorSpeed, WORD wRightMotor
 	effect.rglDirection = rglDirection;// 振動の方向
 
 	DICONSTANTFORCE cf;
-	cf.lMagnitude = lMotorPower;  // 振動の強さ (0 - DI_FFNOMINALMAX)
+	leftMotorSpeed = clamp(leftMotorSpeed, -1.0f, 1.0f);
+	cf.lMagnitude = LONG(leftMotorSpeed * float(DI_FFNOMINALMAX));  // 振動の強さ (0 - DI_FFNOMINALMAX)
 
 	effect.cbTypeSpecificParams = sizeof(DICONSTANTFORCE);
 	effect.lpvTypeSpecificParams = &cf;
@@ -1766,241 +1504,75 @@ void CInputDirectInputController::Vibrate(WORD wLeftMotorSpeed, WORD wRightMotor
 	}
 }
 
-//--------------------------------
-//接続確認
-//--------------------------------
-
-//-----------
-//Xinput
-//-----------
-bool IsXInputControllerConnected(CONTROLLER Controller)
+//------------------------
+// デバイス設定
+//------------------------
+HRESULT CInputDirectInputController::SetProperty(void)
 {
-	XINPUT_STATE joykeyState[CONTROLLER_MAX];
+	if (m_pDevice == nullptr)return E_FAIL;
 
-	if (Controller==CONTROLLER_MAX)
-	{
-		for (int i = 0; i < CONTROLLER_MAX; i++)
-		{
-			if (XInputGetState(i, &joykeyState[i]) == ERROR_SUCCESS)
-			{
-				return true;
-			}
-		}
+	// デバイス全体に設定
+	DIPROPDWORD dipdw;
+	dipdw.diph.dwSize = sizeof(DIPROPDWORD);
+	dipdw.diph.dwHeaderSize = sizeof(DIPROPHEADER);
+	dipdw.diph.dwHow = DIPH_DEVICE;
+	dipdw.diph.dwObj = 0;
 
-		return false;
-	}
+	// 16個のイベントを格納できるバッファを作成
+	dipdw.dwData = 16;
+	if (FAILED(m_pDevice->SetProperty(DIPROP_BUFFERSIZE, &dipdw.diph)))return E_FAIL;
 
-	return XInputGetState(Controller, &joykeyState[Controller]) == ERROR_SUCCESS;
+	// デッドゾーンを20%に設定
+	dipdw.dwData = 2000;
+	if (FAILED(m_pDevice->SetProperty(DIPROP_DEADZONE, &dipdw.diph)))return E_FAIL;
+
+	// 軸オブジェクト設定
+	return m_pDevice->EnumObjects(EnumAxesCallback, this, DIDFT_AXIS);
 }
 
-//------------
-//dinput
-//------------
-bool IsDirectInputControllerConnected(CONTROLLER Controller)
+//------------------------
+// 範囲設定コールバック
+//------------------------
+BOOL CALLBACK CInputDirectInputController::EnumAxesCallback(LPCDIDEVICEOBJECTINSTANCE lpddoi, LPVOID pvRef)
 {
-	if (Controller == CONTROLLER_MAX)
-	{
-		for (int i = 0; i < CONTROLLER_MAX; i++)
-		{
-			if (g_DevdJoypad[i] != nullptr)
-			{
-				return true;
-			}
-		}
+	CInputDirectInputController* pThis = static_cast<CInputDirectInputController*>(pvRef);
 
-		return false;
+	DIPROPRANGE dipr;
+	dipr.diph.dwSize = sizeof(DIPROPRANGE);
+	dipr.diph.dwHeaderSize = sizeof(DIPROPHEADER);
+	dipr.diph.dwHow = DIPH_BYOFFSET;
+	dipr.diph.dwObj = lpddoi->dwOfs;
+
+	// dwOfsはDIJOYSTATE2構造体内のオフセット値なので、
+	// C++標準のoffsetofを使って直接比較する
+	switch (lpddoi->dwOfs)
+	{
+		// スティック系の軸 (中央がニュートラル)
+	case offsetof(DIJOYSTATE2, lX):
+	case offsetof(DIJOYSTATE2, lY):
+	case offsetof(DIJOYSTATE2, lRx):
+	case offsetof(DIJOYSTATE2, lRy):
+		dipr.lMin = DIRECTINPUT_AXIS_MIN;
+		dipr.lMax = DIRECTINPUT_AXIS_MAX;
+		break;
+
+		// トリガーやスライダー系の軸 (最小～最大)
+	case offsetof(DIJOYSTATE2, lZ):
+	case offsetof(DIJOYSTATE2, lRz):
+	case offsetof(DIJOYSTATE2, rglSlider[0]): // DIJOFS_SLIDER(0) はこれに相当
+	case offsetof(DIJOYSTATE2, rglSlider[1]): // DIJOFS_SLIDER(1) はこれに相当
+	default: // 不明な軸もこちらで処理
+		dipr.lMin = DIRECTINPUT_TRIGGER_MIN;
+		dipr.lMax = DIRECTINPUT_TRIGGER_MAX;
+		break;
 	}
 
-	return g_DevdJoypad[Controller] != nullptr;
-}
+	HRESULT hr = pThis->m_pDevice->SetProperty(DIPROP_RANGE, &dipr.diph);
 
-//------------------
-//コントローラー名
-//------------------
-char *ControllerName(CONTROLLER Controller)
-{
-	return &g_ConName[Controller][0];
-}
-
-//------------------
-//コントローラー数
-//------------------
-int ControllerNum(CONTYPE Contype)
-{
-	if (Contype==CONTYPE_X)
+	if (FAILED(hr))
 	{
-		return g_XcontrollerNum;
-	}
-	else
-	{
-		return g_DcontrollerNum;
-	}
-}
-
-//---------------------------
-//デバイス情報取得
-//---------------------------
-BOOL CALLBACK CInputDirectInput::EnumDevicesCallback(const DIDEVICEINSTANCE* pdidInstance, VOID* pContext)
-{
-	static int nControllerNum = 0;
-	static int XcontrollerNum = 0;
-
-	if (g_bUnCon)
-	{
-		nControllerNum = 0;
-		XcontrollerNum = 0;
-		g_DcontrollerNum = 0;
-		g_XcontrollerNum = 0;
-		g_bX = false;
-		g_bUnCon = false;
-		//エフェクトデバイスの破棄
-		VibratedControllerStop(CONTROLLER_MAX);
-		for (int i = 0; i < CONTROLLER_MAX; i++)
-		{
-			//キーボードデバイスの破棄
-			if (g_DevdJoypad[i] != nullptr)
-			{
-				g_DevdJoypad[i]->Unacquire();
-				g_DevdJoypad[i]->Release();
-				g_DevdJoypad[i] = nullptr;
-			}
-		}
-		for (int i = 0; i < CONTROLLER_MAX; i++)
-		{
-			g_ConName[i][0] = '\0';
-		}
+		return DIENUM_STOP;
 	}
 
-	if ((nControllerNum+XcontrollerNum)<=CONTROLLER_MAX)
-	{
-		XINPUT_STATE state;
-		ZeroMemory(&state, sizeof(XINPUT_STATE));
-
-		g_pDiInstance[nControllerNum] = pdidInstance;
-
-		if (XInputGetState(XcontrollerNum, &state) == ERROR_SUCCESS)
-		{
-			if (SUCCEEDED(g_pinput->CreateDevice(pdidInstance->guidInstance, &g_DevdJoypad[XcontrollerNum], nullptr)))
-			{//インプットデバイスの作成
-				HINSTANCE hInstanse;
-				HWND hWnd;
-
-				hInstanse = GethInstanse();
-				hWnd = GethWnd();
-
-				//フォーマット作成
-				g_DevdJoypad[nControllerNum]->SetDataFormat(&c_dfDIJoystick);
-
-				g_DevdJoypad[nControllerNum]->SetCooperativeLevel(hWnd, (DISCL_FOREGROUND | DISCL_EXCLUSIVE));
-
-				g_DevdJoypad[nControllerNum]->Acquire();//アクセス権限の取得
-
-				strcpy(&g_ConName[nControllerNum][0], pdidInstance->tszProductName);
-				XcontrollerNum++;
-			}
-		}
-		else if (SUCCEEDED(g_pinput->CreateDevice(pdidInstance->guidInstance, &g_DevdJoypad[nControllerNum + XNum()], nullptr)))
-		{//インプットデバイスの作成
-			HINSTANCE hInstanse;
-			HWND hWnd;
-
-			hInstanse = GethInstanse();
-			hWnd = GethWnd();
-
-			//フォーマット作成
-			g_DevdJoypad[nControllerNum + XNum()]->SetDataFormat(&c_dfDIJoystick);
-
-			g_DevdJoypad[nControllerNum + XNum()]->SetCooperativeLevel(hWnd, (DISCL_FOREGROUND | DISCL_EXCLUSIVE));
-
-			g_DevdJoypad[nControllerNum + XNum()]->Acquire();//アクセス権限の取得
-
-			strcpy(&g_ConName[nControllerNum + XNum()][0], pdidInstance->tszProductName);
-			nControllerNum++;
-		}
-	}
-	g_DcontrollerNum = nControllerNum+XcontrollerNum;
-
-	// 列挙を続行
 	return DIENUM_CONTINUE;
 }
-
-//----------
-//
-//----------
-int XNum(void)
-{
-	int XNum = 0;
-	XINPUT_STATE state;
-	ZeroMemory(&state, sizeof(XINPUT_STATE));
-	for (int i = 0; i < CONTROLLER_MAX; i++)
-	{
-		if (XInputGetState(i, &state) == ERROR_SUCCESS)
-		{
-			XNum++;
-		}
-	}
-	return XNum;
-}
-
-LPDIRECTINPUT8 GetInput(void)
-{
-	return g_pinput;
-}
-
-void SetUnCon(bool bUnCon)
-{
-	g_bUnCon = bUnCon;
-}
-
-//-----------------------
-//コントローラー管理初期化
-//-----------------------
-void InputReSet(void)
-{
-	g_bUnCon = false;
-	for (int i = 0; i < CONTROLLER_MAX; i++)
-	{
-		g_ConName[i][0] = '\0';
-	}
-	g_XcontrollerNum = 0;
-	g_DcontrollerNum = 0;
-    g_bX = false;
-	//エフェクトデバイスの破棄
-	VibratedControllerStop(CONTROLLER_MAX);
-	for (int i = 0; i < CONTROLLER_MAX; i++)
-	{
-		//キーボードデバイスの破棄
-		if (g_DevdJoypad[i] != nullptr)
-		{
-			g_DevdJoypad[i]->Unacquire();
-			g_DevdJoypad[i]->Release();
-			g_DevdJoypad[i] = nullptr;
-		}
-	}
-}
-
-//------------------------------------------------
-//コントローラー情報取得
-//------------------------------------------------
-const DIDEVICEINSTANCE* GetDiInstance(CONTROLLER Controller)
-{
-	return g_pDiInstance[Controller];
-}
-
-//----------------------------------------------
-//Xinputコントローラー情報取得
-//----------------------------------------------
-XINPUT_STATE GetXstate(CONTROLLER Controller)
-{
-	return g_joykeyState[Controller];
-}
-
-//----------------------------------------------
-//dinputコントローラー情報取得
-//----------------------------------------------
-DIJOYSTATE Getdstate(CONTROLLER Controller)
-{
-	return g_djoykeyState[Controller];
-}
-
-//#endif

@@ -20,7 +20,7 @@ using namespace DirectX3D; // DirectX3D名前空間の使用
 //------------------------------
 // 生成
 //------------------------------
-CObject3D* CObject3D::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority)
+CObject3D* CObject3D::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, Index priority)
 {
 	CObject3D* pObject3D = new CObject3D(priority); // インスタンス生成
 
@@ -43,7 +43,7 @@ CObject3D* CObject3D::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale
 //------------------------------
 // 生成
 //------------------------------
-CObject3D* CObject3D::Create(Transform transform, TYPE type, int priority)
+CObject3D* CObject3D::Create(Transform transform, TYPE type, Index priority)
 {
 	CObject3D* pObject3D = new CObject3D(priority); // インスタンス生成
 

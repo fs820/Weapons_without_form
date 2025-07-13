@@ -17,11 +17,11 @@ class CObjectX : public CObject
 // ŒöŠJ
 public:
 	CObjectX() : m_mtxWorld{} {}
-	CObjectX(int priority) : CObject(priority), m_mtxWorld{} {}
+	CObjectX(Index priority) : CObject(priority), m_mtxWorld{} {}
 	virtual ~CObjectX() = default;
 
-	static CObjectX* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority = 3);
-	static CObjectX* Create(DirectX::Transform transform, TYPE type, int priority = 3);
+	static CObjectX* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, Index priority = 3);
+	static CObjectX* Create(DirectX::Transform transform, TYPE type, Index priority = 3);
 
 	HRESULT Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type);
 	HRESULT Init(DirectX::Transform transform, TYPE type);

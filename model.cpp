@@ -105,7 +105,7 @@ void CModel::Draw(void)
 	pDevice->SetMaterial(&matDef);
 }
 
-void CModel::SetParent(const int nIdxParent) { m_pModel = CModelManager::GetInstance().GetModel(nIdxParent); }
+void CModel::SetParent(const Index idxParent) { m_pModel = CModelManager::GetInstance().GetModel(idxParent); }
 
 //----------------------------------------------------
 //

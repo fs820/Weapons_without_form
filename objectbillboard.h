@@ -16,11 +16,11 @@ class CObjectBillboard : public CObject
 // ŒöŠJ
 public:
 	CObjectBillboard() : m_pVtxBuff{}, m_mtxWorld{} {}
-	CObjectBillboard(int priority) : CObject(priority), m_pVtxBuff{}, m_mtxWorld{} {}
+	CObjectBillboard(Index priority) : CObject(priority), m_pVtxBuff{}, m_mtxWorld{} {}
 	virtual ~CObjectBillboard() = default;
 
-	static CObjectBillboard* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority = 3);
-	static CObjectBillboard* Create(DirectX::Transform transform, TYPE type, int priority = 3);
+	static CObjectBillboard* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, Index priority = 3);
+	static CObjectBillboard* Create(DirectX::Transform transform, TYPE type, Index priority = 3);
 
 	HRESULT Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type);
 	HRESULT Init(DirectX::Transform transform, TYPE type);

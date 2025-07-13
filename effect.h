@@ -16,12 +16,12 @@ class CEffect final : public CObjectBillboard
 // ŒöŠJ
 public:
 	CEffect() :m_color{}, m_fSpeed{}, m_fLife{} {}
-	CEffect(int priority) : CObjectBillboard(priority), m_fSpeed{}, m_fLife{}, m_DefaultScale{} {}
+	CEffect(Index priority) : CObjectBillboard(priority), m_fSpeed{}, m_fLife{}, m_DefaultScale{} {}
 	~CEffect() = default;
 
 	static HRESULT Load(const string_view sTexturePass);
 	static void Unload(void);
-	static CEffect* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, int priority = 3, D3DXCOLOR color = D3DXCOLOR(0.1f, 0.5f, 0.4f, 0.5f), float fSpeed = 0.0f);
+	static CEffect* Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, Index priority = 3, D3DXCOLOR color = D3DXCOLOR(0.1f, 0.5f, 0.4f, 0.5f), float fSpeed = 0.0f);
 
 	HRESULT Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, D3DXCOLOR color, float fSpeed);
 	void Uninit(void) override;

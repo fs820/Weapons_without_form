@@ -22,6 +22,7 @@
 #include <filesystem>    // ファイル管理
 #include <array>         // 配列
 #include <span>          // 連続データの参照
+#include <limits>        // 最大値定義
 
 #include "common.h"    // 汎用定義
 
@@ -38,6 +39,7 @@ using std::set;              // 一意の配列
 using std::optional;         // エラー対応
 using std::array;            // 配列
 using std::span;             // 連続データの参照
+using std::numeric_limits;   // 最大値
 using std::logic_error;      // 論理エラー
 using std::exception;        // 基本例外
 using std::bit_cast;         // ビット単位のキャスト

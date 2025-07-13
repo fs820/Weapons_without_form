@@ -15,7 +15,7 @@ void CLight::Init(void)
 {
 	LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer().GetDevice();
 
-	for (size_t cntLight = 0; cntLight < m_light.size(); cntLight++)
+	for (DWORD cntLight = 0; cntLight < m_light.size(); cntLight++)
 	{
 		// ƒ‰ƒCƒg‚ÌŽí—Þ‚ðÝ’è
 		m_light[cntLight].Type = D3DLIGHT_DIRECTIONAL;

@@ -23,12 +23,20 @@ constexpr bool ON = true;
 constexpr bool OFF = false;
 
 // Index定義
+#if _WIN64
+using Index = unsigned long long;
+#else
 using Index = unsigned int;
+#endif
 using Index8 = unsigned char;
 using Index16 = unsigned short;
 using Index32 = unsigned int;
 using Index64 = unsigned long long;
 constexpr Index INVALID_ID = Index(-1);
+constexpr Index8 INVALID_ID8 = Index8(-1);
+constexpr Index16 INVALID_ID16 = Index16(-1);
+constexpr Index32 INVALID_ID32 = Index32(-1);
+constexpr Index64 INVALID_ID64 = Index64(-1);
 
 // 汎用Vectorタグ
 using VECTORTAG = enum { X, Y, Z, W };

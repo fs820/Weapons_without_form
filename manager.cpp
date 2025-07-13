@@ -162,8 +162,8 @@ HRESULT CManager::Init(HINSTANCE hInstance, HWND hWnd, BOOL bWindow)
 	//// インプット
 	//if (FAILED(CInput::GetInstance().Init(hInstance, hWnd)))return E_FAIL;
 
-	//// サウンド
-	//if (FAILED(CSoundManager::GetInstance().Init(CMain::GethWnd())))return E_FAIL;
+	// サウンド
+	if (FAILED(CSoundManager::GetInstance().Init(CMain::GethWnd())))return E_FAIL;
 
 	// デバック表示
 	if (FAILED(CDebugProc::Init()))return E_FAIL;
@@ -201,8 +201,8 @@ void CManager::Uninit(void)
 	// テクスチャ
 	CTextureManager::GetInstance().Unload();
 
-	//// インプット
-	//CInput::GetInstance().Uninit();
+	// インプット
+	CInput::GetInstance().Uninit();
 
 	// Gui
 	if (m_pGui != nullptr)

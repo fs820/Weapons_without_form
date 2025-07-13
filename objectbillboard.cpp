@@ -22,7 +22,7 @@ size_t CObjectBillboard::textureIdx{};           // テクスチャ番号
 //------------------------------
 // 生成
 //------------------------------
-CObjectBillboard* CObjectBillboard::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, int priority)
+CObjectBillboard* CObjectBillboard::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3DXVECTOR3 scale, TYPE type, Index priority)
 {
 	CObjectBillboard* pObjectBillboard = new CObjectBillboard(priority); // インスタンス生成
 
@@ -47,7 +47,7 @@ CObjectBillboard* CObjectBillboard::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot, D3D
 //------------------------------
 // 生成
 //------------------------------
-CObjectBillboard* CObjectBillboard::Create(Transform transform, TYPE type, int priority)
+CObjectBillboard* CObjectBillboard::Create(Transform transform, TYPE type, Index priority)
 {
 	CObjectBillboard* pObjectBillboard = new CObjectBillboard(priority); // インスタンス生成
 

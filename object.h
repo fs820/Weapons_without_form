@@ -29,7 +29,7 @@ public:
 		Max         // 最大数
 	};
 
-	CObject(int priority = 3) :m_Priority(priority), m_ID(INVALID_ID), m_type{}, m_transform{}, m_bCollision{}, m_bRelease{}, m_bAfterimage{} {} // デフォルト引数によりデフォルトコンストラクタを兼用している
+	CObject(Index priority = 3) :m_Priority(priority), m_ID(INVALID_ID), m_type{}, m_transform{}, m_bCollision{}, m_bRelease{}, m_bAfterimage{} {} // デフォルト引数によりデフォルトコンストラクタを兼用している
 	virtual ~CObject() = default;
 
 	static void UpdateAll(void);
