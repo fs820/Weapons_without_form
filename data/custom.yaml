@@ -1,0 +1,9 @@
+window:
+  class_name: WindowClass
+  window_name: Telepathy_Wepon
+  width: 1920.0
+  height: 1080.0
+  borderless: true
+  resizable: false
+Application:
+  fps: 60

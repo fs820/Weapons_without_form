@@ -4,7 +4,8 @@
 #
 #####################
 
-XModel = data/MODEL/House000.x                           # Test
+XModel = data/MODEL/爱莉希雅 3.0.x                       # Test
+Shadow = data/MODEL/shadow.x                             # 影用の筒
 
 # Player
 PBody = data\\MODEL\\Playermodel\\00_Player_Body.x        # 胴
