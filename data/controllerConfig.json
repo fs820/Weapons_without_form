@@ -1,0 +1,5 @@
+{
+    "Interact": "LeftFaceButton",
+    "Jump": "BottomButton",
+    "Attack": "RT"
+}

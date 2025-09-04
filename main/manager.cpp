@@ -14,7 +14,6 @@
 #include "camera.h"
 #include "light.h"
 #include "model.h"
-#include "gui.h"
 #include "hierarchy.h"
 #include "motion.h"
 #include "scene.h"
@@ -419,19 +418,8 @@ HRESULT CManager::Init(const context::InitContext initContext)
 		}
 	}
 
-	// Gui
-	if (m_pGui == nullptr)
-	{
-		m_pGui = new CGui;
-
-		if (m_pGui != nullptr)
-		{
-			m_pGui->Init();
-		}
-	}
-
-	//// インプット
-	//if (FAILED(CInput::GetInstance().Init(initContext.hWnd)))return E_FAIL;
+	// インプット
+	if (FAILED(CInput::GetInstance().Init(initContext.hWnd)))return E_FAIL;
 
 	// サウンド
 	if (FAILED(CSoundManager::GetInstance().Init(initContext.hWnd)))return E_FAIL;
@@ -447,6 +435,8 @@ HRESULT CManager::Init(const context::InitContext initContext)
     if (FAILED(LoadStage()))return E_FAIL;     // ステージ
 
 	SetMode(scene::MODE::Title);
+
+    m_gameSpeed = 1.0f; // ゲームスピード初期化
 
 	return S_OK;
 }
@@ -477,14 +467,6 @@ void CManager::Uninit(void)
 	// インプット
 	CInput::GetInstance().Uninit();
 
-	// Gui
-	if (m_pGui != nullptr)
-	{
-		m_pGui->Uninit(); //終了処理
-		delete m_pGui;    // インスタンス破棄
-		m_pGui = nullptr; // nullptr
-	}
-
 	// ライト
 	if (m_pLight != nullptr)
 	{
@@ -507,8 +489,9 @@ void CManager::Uninit(void)
 //---------------
 void CManager::Update(const context::UpdateContext updateContext)
 {
-	//// インプット更新
-	//CInput::GetInstance().Update();
+    // コンテキストを拡張
+    context::UpdateContext gameUpdateContext{ updateContext };
+    gameUpdateContext.gameSpeed = m_gameSpeed; // ゲームスピードをセット
 
 	// カーソル位置
 	D3DXVECTOR2 cursorPos{};
@@ -580,17 +563,8 @@ void CManager::Update(const context::UpdateContext updateContext)
 
 	m_pGui->Update(); // Gui更新
 
-	// サウンド更新
-	CSoundManager::GetInstance().Update();
-}
-
-//---------------
-// 描画
-//---------------
-HRESULT CManager::Draw(const context::DrawContext drawContext)
-{
-
-	return S_OK;
+    // オブジェクトの更新
+    CObject::UpdateAll(gameUpdateContext);
 }
 
 //-------------------

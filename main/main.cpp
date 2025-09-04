@@ -5,6 +5,7 @@
 //
 //------------------------------------------
 #include <memory>
+#include <windows.h>
 #include "application.h"
 #include "common.h"
 

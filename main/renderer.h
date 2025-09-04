@@ -48,6 +48,66 @@ namespace renderer
             if (len == 0.0f) return Vector3(0.0f, 0.0f, 0.0f);
             return Vector3(x / len, y / len, z / len);
         }
+
+        Vector3 operator+(const Vector3& rhs) const
+        {
+            return Vector3(x + rhs.x, y + rhs.y, z + rhs.z);
+        }
+
+        Vector3 operator-(const Vector3& rhs) const
+        {
+            return Vector3(x - rhs.x, y - rhs.y, z - rhs.z);
+        }
+
+        Vector3 operator*(float scalar) const
+        {
+            return Vector3(x * scalar, y * scalar, z * scalar);
+        }
+
+        Vector3 operator/(float scalar) const
+        {
+            if (scalar == 0.0f) return Vector3(0.0f, 0.0f, 0.0f);
+            return Vector3(x / scalar, y / scalar, z / scalar);
+        }
+        Vector3& operator+=(const Vector3& rhs)
+        {
+            x += rhs.x;
+            y += rhs.y;
+            z += rhs.z;
+            return *this;
+        }
+        Vector3& operator-=(const Vector3& rhs)
+        {
+            x -= rhs.x;
+            y -= rhs.y;
+            z -= rhs.z;
+            return *this;
+        }
+        Vector3& operator*=(float scalar)
+        {
+            x *= scalar;
+            y *= scalar;
+            z *= scalar;
+            return *this;
+        }
+        Vector3& operator/=(float scalar)
+        {
+            if (scalar != 0.0f)
+            {
+                x /= scalar;
+                y /= scalar;
+                z /= scalar;
+            }
+            return *this;
+        }
+        bool operator==(const Vector3& rhs) const
+        {
+            return (x == rhs.x && y == rhs.y && z == rhs.z);
+        }
+        bool operator!=(const Vector3& rhs) const
+        {
+            return !(*this == rhs);
+        }
     };
 
     // トランスフォーム構造体
@@ -220,7 +280,6 @@ public:
 
 	bool Init(const context::InitContext initContext);
 	void Uninit(void);
-	void Update(const context::UpdateContext updateContext);
     bool Draw(const context::DrawContext drawContext);
 	
     bool SetVertex2D(renderer::VertexBuffer* ppVtxBuffer, std::span<const renderer::_2D::Vertex> vertex, renderer::Vector3 offSet = {0.0f,0.0f,0.0f}, float angle = 0.0f) const;

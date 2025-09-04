@@ -197,7 +197,9 @@ bool Application::Update(void)
                 updateContext.elapsedTime = elapsedTime;
                 updateContext.deltaTime = deltaTime;
 
-                m_pManager->Update(updateContext); //更新処理
+                m_pInput->Update(updateContext.deltaTime); // 入力更新
+                m_pSound->Update();                        // サウンド更新
+                m_pManager->Update(updateContext);         // ゲーム更新
             }
 
             // 描画共有情報
@@ -205,7 +207,7 @@ bool Application::Update(void)
             drawContext.pAppContext = &m_appContext;
 
             // 描画処理
-            if (FAILED(m_pManager->Draw(drawContext))) { return E_FAIL; }
+            if (FAILED(m_pRenderer->Draw(drawContext))) { return E_FAIL; }
         }
     }
 }

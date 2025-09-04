@@ -87,7 +87,15 @@ class CSoundManager final
 {
 	// 公開
 public:
-	static CSoundManager& GetInstance(void) { return m_instance; }
+    CSoundManager() : m_pXAudio2{}, m_pMasteringVoice{}, m_apSound{},
+        // サウンド情報
+        m_aInfo{
+            sound::Info{"data/BGM/Test.wav", -1}, // TestBgm
+            sound::Info{"data/SE/Test.wav", 0}    // TestSe
+    },
+        m_audioSource{} {
+    };
+    ~CSoundManager() = default;
 
 	CSoundManager(const CSoundManager&) = delete;
 	CSoundManager& operator=(const CSoundManager&) = delete;
@@ -107,18 +115,6 @@ public:
 
 	// 非公開
 private:
-	static CSoundManager m_instance;     // 自分のインスタンス
-
-	CSoundManager() : m_pXAudio2{}, m_pMasteringVoice{}, m_apSound{},
-		// サウンド情報
-		m_aInfo{
-			sound::Info{"data/BGM/Test.wav", -1}, // TestBgm
-			sound::Info{"data/SE/Test.wav", 0}    // TestSe
-	},
-		m_audioSource{} {
-	};
-	~CSoundManager() = default;
-
 	HRESULT CheckChunk(HANDLE hFile, DWORD format, DWORD* pChunkSize, DWORD* pChunkDataPosition);
 	HRESULT ReadChunkData(HANDLE hFile, void* pBuffer, DWORD dwBuffersize, DWORD dwBufferoffset);
 

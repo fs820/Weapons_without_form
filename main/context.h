@@ -65,8 +65,9 @@ namespace context
         const AppContext* pAppContext; // アプリケーションコンテキストへのポインタ
         float elapsedTime;             // 実行時間
         float deltaTime;               // フレーム時間
+        float gameSpeed;               // ゲームスピード
 
-        UpdateContext(const AppContext* appContext = nullptr, float elapsedTime = 0.0f, float deltaTime = 0.0f) : pAppContext(appContext), elapsedTime(elapsedTime), deltaTime(deltaTime) {}
+        UpdateContext(const AppContext* appContext = nullptr, float elapsed = 0.0f, float delta = 0.0f, float speed = 1.0f) : pAppContext(appContext), elapsedTime(elapsed), deltaTime(delta), gameSpeed(speed) {}
         ~UpdateContext() = default;
     };
 

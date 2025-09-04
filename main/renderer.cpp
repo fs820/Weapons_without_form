@@ -176,14 +176,6 @@ void CRenderer::Uninit(void)
 }
 
 //------------------------------
-// 更新処理
-//------------------------------
-void CRenderer::Update(const context::UpdateContext updateContext)
-{
-	CObject::UpdateAll(updateContext);        // オブジェクトの更新
-}
-
-//------------------------------
 //描画処理
 //------------------------------
 bool CRenderer::Draw(const context::DrawContext drawContext)

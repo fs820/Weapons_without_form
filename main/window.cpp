@@ -200,7 +200,7 @@ LRESULT CALLBACK Window::InstanceWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam,
             CDebugProc::Print(CDebugProc::MODE::System, "--- HID WM_INPUT Received ---");
         }
 
-        CInputRawInput::AnalysisRawData(pRawInput); // ポインタをInput側に任せる
+        CInputRawInput::SetRawData(*pRawInput); // RawInputデータをセット
         break;
     }
     case WM_SIZE:

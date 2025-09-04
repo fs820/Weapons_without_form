@@ -10,14 +10,12 @@
 #include "context.h" // コンテキスト
 #include "common.h"  // 共通ヘッダ
 
-class CRenderer;      // レンダラー
 class CCamera;        // カメラ
 class CLight;         // ライト
 class CGui;           // Gui
-class CDebugProc;     // デバッグ表示
 
 // テクスチャタグ
-enum class TEXTAG : common::Index
+enum class TEXTAG : common::Index8
 {
 	Number,           // 数字
 	Ground,           // 地面
@@ -70,7 +68,7 @@ class CManager
 {
 // 公開
 public:
-	CManager() : m_appContext{}, m_pScene{}, m_bPause{}, m_pDebugProc{}, m_pGui{}, m_pCamera{}, m_pLight{} {};
+    CManager() : m_pScene{}, m_gameSpeed{}, m_bPause{}, m_pGui{}, m_pCamera{}, m_pLight{} {};
 	~CManager() = default;
 
     CManager(const CManager&) = delete;
@@ -81,7 +79,6 @@ public:
 	HRESULT Init(const context::InitContext initContext);
 	void Uninit(void);
 	void Update(const context::UpdateContext updateContext);
-	HRESULT Draw(const context::DrawContext drawContext);
 	scene::MODE GetMode(void) { return m_pScene->GetMode(); }
     void SetPause(bool bPause) { m_bPause = bPause; }
     bool IsPause(void) const { return m_bPause; }
@@ -90,12 +87,11 @@ public:
 private:
 	HRESULT SetMode(scene::MODE mode);
 
-	context::AppContext m_appContext; // アプリケーションコンテキスト
 	CScene* m_pScene;                 // シーン
+    float m_gameSpeed;                // ゲームスピード
 	bool m_bPause;                    // ポーズ状態かどうか
 
 	// ポインタ
-	CDebugProc* m_pDebugProc;  // デバック表示
 	CGui* m_pGui;              // Gui
 	CCamera* m_pCamera;        // カメラ
 	CLight* m_pLight;          // ライト

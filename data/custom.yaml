@@ -1,9 +1,11 @@
+# ウインドウの設定
 window:
-  class_name: WindowClass
-  window_name: Telepathy_Wepon
-  width: 1920.0
-  height: 1080.0
-  borderless: true
-  resizable: false
+  class_name: WindowClass      # ウインドウクラス名
+  window_name: Telepathy_Wepon # ウインドウタイトル
+  width: 1920.0                # ウインドウ幅
+  height: 1080.0               # ウインドウ高さ
+  borderless: true             # フルスクリーンをボーダーレスで実現する
+  resizable: false             # ウインドウサイズを変更可能にする
+# アプリケーションの設定
 Application:
-  fps: 60
+  fps: 60                      # フレームレート
