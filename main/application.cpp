@@ -197,9 +197,9 @@ bool Application::Update(void)
                 updateContext.elapsedTime = elapsedTime;
                 updateContext.deltaTime = deltaTime;
 
-                m_pInput->Update(updateContext.deltaTime); // 入力更新
-                m_pSound->Update();                        // サウンド更新
-                m_pManager->Update(updateContext);         // ゲーム更新
+                m_pInput->Update();                // 入力更新
+                m_pSound->Update();                // サウンド更新
+                m_pManager->Update(updateContext); // ゲーム更新
             }
 
             // 描画共有情報

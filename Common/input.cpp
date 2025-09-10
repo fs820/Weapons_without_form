@@ -61,10 +61,6 @@ HRESULT CInput::Init(HINSTANCE hInstanse, HWND hWnd)
 			if (FAILED(m_pController->Init(hInstanse, hWnd))) return E_FAIL;
 		}
 	}
-
-    // DirectInput解放
-    CInputDirectInput::DirectInputRelease();
-
 	return S_OK;
 }
 
@@ -81,6 +77,9 @@ void CInput::Uninit(void)
 
 	// コントローラー
 	SAFE_UNINIT(m_pController);
+
+    // DirectInput解放
+    CInputDirectInput::DirectInputRelease();
 }
 
 //-----------------
@@ -155,12 +154,14 @@ HRESULT CInputKeyboardManager::Init(HINSTANCE hInstanse, HWND hWnd)
 	// raw
 	do
 	{// ループ
+        Index8 count = 0;
+
 		if (pKeyboard != nullptr) return E_FAIL;  // null
 		pKeyboard = new CInputRawInputKeyboard;   // rawInput生成
 		if (pKeyboard == nullptr)  return E_FAIL; // 生成失敗
 
 		// 初期化
-		if (SUCCEEDED(pKeyboard->Init(hInstanse, hWnd)))
+		if (SUCCEEDED(pKeyboard->Init(hInstanse, hWnd, count)))
 		{// 成功
 			m_apKeyboard.push_back(pKeyboard); // キーボード追加
 			pKeyboard = nullptr; // null
@@ -170,6 +171,7 @@ HRESULT CInputKeyboardManager::Init(HINSTANCE hInstanse, HWND hWnd)
 			SAFE_UNINIT(pKeyboard); // 捨てる
 			break;
 		}
+        ++count;
 	} while (true);
 
 	if (m_apKeyboard.size() > 0) { return S_OK; } // キーボード生成済み
@@ -257,13 +259,15 @@ HRESULT CInputMouseManager::Init(HINSTANCE hInstanse, HWND hWnd)
 	// raw
 	do
 	{// ループ
+        Index8 count = 0;
+
 		if (pMouse != nullptr) return E_FAIL;  // null
 		pMouse = new CInputRawInputMouse;      // rawInput生成
 		if (pMouse == nullptr)  return E_FAIL; // 生成失敗
 
 		// 初期化
-		if (SUCCEEDED(pMouse->Init(hInstanse, hWnd)))
-		{// 成功
+        if (SUCCEEDED(pMouse->Init(hInstanse, hWnd, count)))
+        {// 成功
 			m_apMouse.push_back(pMouse); // マウス追加
 			pMouse = nullptr; // null
 		}
@@ -272,6 +276,7 @@ HRESULT CInputMouseManager::Init(HINSTANCE hInstanse, HWND hWnd)
 			SAFE_UNINIT(pMouse); // 捨てる
 			break;
 		}
+        ++count;
 	} while (true);
 
 	if (m_apMouse.size() > 0) { return S_OK; } // マウス生成済み
@@ -557,12 +562,354 @@ void CInputController::Update(void)
 //
 //--------------------------
 
+std::vector<DeviceInfo> CInputRawInput::m_aDevice{};                               // rawInputデバイス
+std::unordered_map<HANDLE, std::vector<ButtonState>> CInputRawInput::m_state{};    // デバイスの生データ保存用
+std::unordered_map<HANDLE, std::vector<ButtonState>> CInputRawInput::m_stateOld{}; // デバイスの生データ保存用(前回)
+std::unordered_map<HANDLE, Axis> CInputRawInput::m_move{};                         // マウス移動量保存用
+std::unordered_map<HANDLE, float> CInputRawInput::m_wheel{};                       // マウスホイール移動量保存用
+
+//-----------------------------
+// rawInputデバイス登録
+//-----------------------------
+HRESULT CInputRawInput::SetDevice(HWND hWnd, bool allDevice)
+{
+    return allDevice ? RegisterAllInputDevices(hWnd) : RegisterStandardInputDevices(hWnd);
+}
+
+//---------------------------------------------
+// デバイスハンドルを取得 (タイプとインデックスで指定)
+//---------------------------------------------
+HANDLE CInputRawInput::GetDeviceHandle(DWORD dwType, common::Index8 idx)
+{
+    Index8 count = 0;
+    for (const auto& device : m_aDevice)
+    {
+        if (device.dwType == dwType)
+        {
+            if (count == idx)
+            {
+                return device.hDevice; // デバイスハンドルを返す
+            }
+            ++count;
+        }
+    }
+    return nullptr; // 見つからなかった場合はnullptrを返す
+}
+
 //---------------------------------------------
 // メッセージから貰ったデータをデバイスに送信
 //---------------------------------------------
-HRESULT CInputRawInput::SetRawData(RAWINPUT rawData)
+HRESULT CInputRawInput::SetRawData(const RAWINPUT& rawData)
 {
+    switch (rawData.header.dwType)
+    {
+    case RIM_TYPEKEYBOARD:
+        m_state.try_emplace(rawData.header.hDevice, std::vector<bool>(MAX_KEY, false));    // デバイスがなければ追加
+        m_stateOld.try_emplace(rawData.header.hDevice, std::vector<bool>(MAX_KEY, false)); // デバイスがなければ追加
+
+        if ((rawData.data.keyboard.Flags & RI_KEY_BREAK) == 0)
+        {// 押された
+            m_state[rawData.header.hDevice][rawData.data.keyboard.VKey].isDown = true;
+            if (!m_stateOld[rawData.header.hDevice][rawData.data.keyboard.VKey].isDown)
+            {// 前回押されていなかった
+                m_state[rawData.header.hDevice][rawData.data.keyboard.VKey].isTrigger = true; // 押した瞬間
+            }
+        }
+        else
+        {
+            m_state[rawData.header.hDevice][rawData.data.keyboard.VKey].isDown = false;
+            if (m_stateOld[rawData.header.hDevice][rawData.data.keyboard.VKey].isDown)
+            {// 前回押されていた
+                m_state[rawData.header.hDevice][rawData.data.keyboard.VKey].isRelease = true; // 離した瞬間
+            }
+        }
+        break;
+    case RIM_TYPEMOUSE:
+        m_state.try_emplace(rawData.header.hDevice, std::vector<bool>(Index8(MOUSE_BUTTON::Max), false));    // デバイスがなければ追加
+        m_stateOld.try_emplace(rawData.header.hDevice, std::vector<bool>(Index8(MOUSE_BUTTON::Max), false)); // デバイスがなければ追加
+        m_move.try_emplace(rawData.header.hDevice, Axis::Null);                                              // デバイスがなければ追加
+        m_wheel.try_emplace(rawData.header.hDevice, 0.0f);                                                   // デバイスがなければ追加
+
+        const RAWMOUSE& mouseData = rawData.data.mouse;
+
+        // MOUSE_MOVE_ABSOLUTE でない限り、lLastX/Yは相対移動量
+        if ((mouseData.usFlags & MOUSE_MOVE_ABSOLUTE) == 0)
+        {
+            m_move[rawData.header.hDevice].x += mouseData.lLastX;
+            m_move[rawData.header.hDevice].y += mouseData.lLastY;
+        }
+
+        if (mouseData.usButtonFlags & RI_MOUSE_WHEEL)
+        {
+            // usButtonData は符号付き16bit整数
+            short wheelDelta = (short)mouseData.usButtonData;
+            m_wheel[rawData.header.hDevice] += wheelDelta;
+        }
+        if (mouseData.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
+        {// 右ボタン押下
+            m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::Left)].isDown = true;
+            if (!m_stateOld[rawData.header.hDevice][Index8(MOUSE_BUTTON::Left)].isDown)
+            {// 前回押されていなかった
+                m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::Left)].isTrigger = true; // 押した瞬間
+            }
+        }
+        if (mouseData.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP)
+        {// 右ボタン離上
+            m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::Left)].isDown = false;
+            if (m_stateOld[rawData.header.hDevice][Index8(MOUSE_BUTTON::Left)].isDown)
+            {// 前回押されていた
+                m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::Left)].isRelease = true; // 離した瞬間
+            }
+        }
+        if (mouseData.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
+        {// 左ボタン押下
+            m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::Right)].isDown = true;
+            if (!m_stateOld[rawData.header.hDevice][Index8(MOUSE_BUTTON::Right)].isDown)
+            {// 前回押されていなかった
+                m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::Right)].isTrigger = true; // 押した瞬間
+            }
+        }
+        if (mouseData.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
+        {// 左ボタン離上
+            m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::Right)].isDown = false;
+            if (m_stateOld[rawData.header.hDevice][Index8(MOUSE_BUTTON::Right)].isDown)
+            {// 前回押されていた
+                m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::Right)].isRelease = true; // 離した瞬間
+            }
+        }
+        if (mouseData.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
+        {// 中ボタン押下
+            m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::Senter)].isDown = true;
+            if (!m_stateOld[rawData.header.hDevice][Index8(MOUSE_BUTTON::Senter)].isDown)
+            {// 前回押されていなかった
+                m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::Senter)].isTrigger = true; // 押した瞬間
+            }
+        }
+        if (mouseData.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
+        {// 中ボタン離上
+            m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::Senter)].isDown = false;
+            if (m_stateOld[rawData.header.hDevice][Index8(MOUSE_BUTTON::Senter)].isDown)
+            {// 前回押されていた
+                m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::Senter)].isRelease = true; // 離した瞬間
+            }
+        }
+        if (mouseData.usButtonFlags & RI_MOUSE_BUTTON_4_DOWN)
+        {// 4ボタン押下
+            m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::B1)].isDown = true;
+            if (!m_stateOld[rawData.header.hDevice][Index8(MOUSE_BUTTON::B1)].isDown)
+            {// 前回押されていなかった
+                m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::B1)].isTrigger = true; // 押した瞬間
+            }
+        }
+        if (mouseData.usButtonFlags & RI_MOUSE_BUTTON_4_UP)
+        {// 4ボタン離上
+            m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::B1)].isDown = false;
+            if (m_stateOld[rawData.header.hDevice][Index8(MOUSE_BUTTON::B1)].isDown)
+            {// 前回押されていた
+                m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::B1)].isRelease = true; // 離した瞬間
+            }
+        }
+        if (mouseData.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN)
+        {// 5ボタン押下
+            m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::B2)].isDown = true;
+            if (!m_stateOld[rawData.header.hDevice][Index8(MOUSE_BUTTON::B2)].isDown)
+            {// 前回押されていなかった
+                m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::B2)].isTrigger = true; // 押した瞬間
+            }
+        }
+        if (mouseData.usButtonFlags & RI_MOUSE_BUTTON_5_UP)
+        {// 5ボタン離上
+            m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::B2)].isDown = false;
+            if (m_stateOld[rawData.header.hDevice][Index8(MOUSE_BUTTON::B2)].isDown)
+            {// 前回押されていた
+                m_state[rawData.header.hDevice][Index8(MOUSE_BUTTON::B2)].isRelease = true; // 離した瞬間
+            }
+        }
+        break;
+    }
 	return S_OK;
+}
+
+//---------------------------------------------
+// デバイスの生データを取得 (デバイスハンドルで指定)
+//---------------------------------------------
+void CInputRawInput::GetRawData(HANDLE hDevice, std::span<input::ButtonState> state, Axis* pAxis, float* pWheel)
+{
+    if (!state.empty() && m_state.find(hDevice) != m_state.end())
+    {// デバイスが存在する場合
+        for (Index8 cnt = 0; cnt < std::min(state.size(), m_state[hDevice].size()); ++cnt)
+        {
+            m_stateOld[hDevice] = m_state[hDevice];  // 前回の状態を保存
+
+            state[cnt] = m_state[hDevice][cnt];      // 生データをコピー
+            m_state[hDevice][cnt].isTrigger = false; // 押した瞬間をリセット
+            m_state[hDevice][cnt].isRelease = false; // 離した瞬間をリセット
+        }
+    }
+    if (pAxis != nullptr && m_move.find(hDevice) != m_move.end())
+    {// マウス移動量が欲しい場合
+        *pAxis = m_move[hDevice];     // 移動量をコピー
+        m_move[hDevice] = Axis::Null; // 移動量をリセット
+    }
+    if (pWheel != nullptr && m_wheel.find(hDevice) != m_wheel.end())
+    {// ホイール移動量が欲しい場合
+        *pWheel = m_wheel[hDevice];   // 移動量をコピー
+        m_wheel[hDevice] = 0.0f;      // 移動量をリセット
+    }
+}
+
+//----------------------------------------------------
+// インプットの登録 (スタンダード)
+//----------------------------------------------------
+HRESULT CInputRawInput::RegisterStandardInputDevices(HWND hWnd)
+{
+    RAWINPUTDEVICE RawDevice[] =
+    {
+        { 0x01, 0x06, RIDEV_INPUTSINK | RIDEV_NOLEGACY, hWnd }, // Standard Keyboard
+        { 0x01, 0x02, RIDEV_INPUTSINK | RIDEV_NOLEGACY, hWnd }, // Standard Mouse
+    };
+
+    if (RegisterRawInputDevices(RawDevice, 2, sizeof(RAWINPUTDEVICE)))
+    {
+        return S_OK;
+    }
+    else
+    {
+        return E_FAIL;
+    }
+
+    UINT nDevices = 0;
+    if (GetRawInputDeviceList(nullptr, &nDevices, sizeof(RAWINPUTDEVICELIST)) != 0)
+    {
+        return E_FAIL;
+    }
+
+    if (nDevices == 0)
+    {
+        return E_FAIL;
+    }
+
+    std::vector<RAWINPUTDEVICELIST> devices(nDevices);
+    if (GetRawInputDeviceList(devices.data(), &nDevices, sizeof(RAWINPUTDEVICELIST)) == (UINT)-1)
+    {
+        return E_FAIL;
+    }
+
+    for (const auto& dev : devices)
+    {
+        m_aDevice.push_back(DeviceInfo(dev.dwType, dev.hDevice)); // デバイスを保存
+    }
+}
+
+//----------------------------------------------------
+// インプットの登録 (ALL)
+//----------------------------------------------------
+HRESULT CInputRawInput::RegisterAllInputDevices(HWND hWnd)
+{
+    try
+    {
+        UINT nDevices = 0;
+        if (GetRawInputDeviceList(nullptr, &nDevices, sizeof(RAWINPUTDEVICELIST)) != 0)
+        {
+            return E_FAIL;
+        }
+
+        if (nDevices == 0)
+        {
+            return E_FAIL;
+        }
+
+        std::vector<RAWINPUTDEVICELIST> devices(nDevices);
+        if (GetRawInputDeviceList(devices.data(), &nDevices, sizeof(RAWINPUTDEVICELIST)) == (UINT)-1)
+        {
+            return E_FAIL;
+        }
+
+        std::vector<RAWINPUTDEVICE> inputDevices;
+        std::set<std::pair<USHORT, USHORT>> registeredPairs;
+
+        for (const auto& dev : devices)
+        {
+            RID_DEVICE_INFO info = {};
+            UINT size = sizeof(info);
+            info.cbSize = sizeof(info);
+
+            if (GetRawInputDeviceInfo(dev.hDevice, RIDI_DEVICEINFO, &info, &size) > 0)
+            {
+                RAWINPUTDEVICE rawDevice = {};
+                rawDevice.dwFlags = RIDEV_INPUTSINK;
+                rawDevice.hwndTarget = hWnd;
+
+                if (info.dwType == RIM_TYPEKEYBOARD)
+                {
+                    // キーボードの場合は標準的なUsagePage/Usageを使用
+                    USHORT usagePage = 0x01;             // HID_USAGE_PAGE_GENERIC
+                    USHORT usage = 0x06;                 // HID_USAGE_GENERIC_KEYBOARD
+                    rawDevice.dwFlags |= RIDEV_NOLEGACY | RIDEV_NOHOTKEYS; // NOLEGACY_NOHOTKEYS
+
+                    auto pair = std::make_pair(usagePage, usage);
+                    if (registeredPairs.find(pair) == registeredPairs.end())
+                    {
+                        registeredPairs.insert(pair);
+                        rawDevice.usUsagePage = usagePage;
+                        rawDevice.usUsage = usage;
+                        inputDevices.push_back(rawDevice);
+                    }
+                }
+                else if (info.dwType == RIM_TYPEMOUSE)
+                {
+                    // マウスの場合は標準的なUsagePage/Usageを使用
+                    USHORT usagePage = 0x01;             // HID_USAGE_PAGE_GENERIC
+                    USHORT usage = 0x02;                 // HID_USAGE_GENERIC_MOUSE
+
+                    auto pair = std::make_pair(usagePage, usage);
+                    if (registeredPairs.find(pair) == registeredPairs.end())
+                    {
+                        registeredPairs.insert(pair);
+                        rawDevice.usUsagePage = usagePage;
+                        rawDevice.usUsage = usage;
+                        inputDevices.push_back(rawDevice);
+                    }
+                }
+                else if (info.dwType == RIM_TYPEHID)
+                {
+                    // HIDデバイスの場合のみ info.hid を使用
+                    USHORT usagePage = info.hid.usUsagePage;
+                    USHORT usage = info.hid.usUsage;
+
+                    // 有効なUsagePage/Usageかチェック
+                    if (usagePage != 0)
+                    {
+                        auto pair = std::make_pair(usagePage, usage);
+                        if (registeredPairs.find(pair) == registeredPairs.end())
+                        {
+                            registeredPairs.insert(pair);
+                            rawDevice.usUsagePage = usagePage;
+                            rawDevice.usUsage = usage;
+                            inputDevices.push_back(rawDevice);
+                        }
+                    }
+                }
+            }
+            m_aDevice.push_back(DeviceInfo(dev.dwType, dev.hDevice)); // デバイスを保存
+        }
+
+        if (!inputDevices.empty())
+        {
+            if (RegisterRawInputDevices(inputDevices.data(), UINT(inputDevices.size()), sizeof(RAWINPUTDEVICE)))
+            {
+                return S_OK;
+            }
+            else
+            {
+                return E_FAIL;
+            }
+        }
+    }
+    catch (...)
+    {
+        return E_FAIL;
+    }
 }
 
 //--------------------------
@@ -574,19 +921,15 @@ HRESULT CInputRawInput::SetRawData(RAWINPUT rawData)
 //--------------------
 //初期化処理
 //--------------------
-HRESULT CInputRawInputKeyboard::Init(HINSTANCE hInstanse, HWND hWnd)
+HRESULT CInputRawInputKeyboard::Init(HINSTANCE hInstanse, HWND hWnd, Index8 idx)
 {
-
+    m_hDevice = CInputRawInput::GetDeviceHandle(RIM_TYPEKEYBOARD, idx); // デバイスハンドルを取得
+    if (m_hDevice = nullptr)
+    {
+        return E_FAIL;
+    }
 
 	return S_OK;
-}
-
-//----------------------
-//終了処理
-//----------------------
-void CInputRawInputKeyboard::Uninit(void)
-{
-
 }
 
 //-------------------------
@@ -594,7 +937,8 @@ void CInputRawInputKeyboard::Uninit(void)
 //-------------------------
 HRESULT CInputRawInputKeyboard::GetKey(std::span<input::ButtonState> keyState) const
 {
-	return S_OK;
+    CInputRawInput::GetRawData(m_hDevice, keyState);
+    return S_OK;
 }
 
 //--------------------------
@@ -606,17 +950,15 @@ HRESULT CInputRawInputKeyboard::GetKey(std::span<input::ButtonState> keyState) c
 //--------------------
 //初期化処理
 //--------------------
-HRESULT CInputRawInputMouse::Init(HINSTANCE hInstanse, HWND hWnd)
+HRESULT CInputRawInputMouse::Init(HINSTANCE hInstanse, HWND hWnd, Index8 idx)
 {
+    m_hDevice = CInputRawInput::GetDeviceHandle(RIM_TYPEMOUSE, idx); // デバイスハンドルを取得
+    if (m_hDevice = nullptr)
+    {
+        return E_FAIL;
+    }
+
 	return S_OK;
-}
-
-//----------------------
-//終了処理
-//----------------------
-void CInputRawInputMouse::Uninit(void)
-{
-
 }
 
 //-------------------------
@@ -624,7 +966,8 @@ void CInputRawInputMouse::Uninit(void)
 //-------------------------
 HRESULT CInputRawInputMouse::GetButton(std::span<input::ButtonState> buttonState) const
 {
-	return S_OK;
+    CInputRawInput::GetRawData(m_hDevice, buttonState);
+    return S_OK;
 }
 
 //-------------------------
@@ -632,7 +975,8 @@ HRESULT CInputRawInputMouse::GetButton(std::span<input::ButtonState> buttonState
 //-------------------------
 HRESULT CInputRawInputMouse::GetMove(input::Axis* pMove) const
 {
-	return S_OK;
+    CInputRawInput::GetRawData(m_hDevice, std::span<ButtonState>(), pMove);
+    return S_OK;
 }
 
 //-------------------------
@@ -640,7 +984,8 @@ HRESULT CInputRawInputMouse::GetMove(input::Axis* pMove) const
 //-------------------------
 HRESULT CInputRawInputMouse::GetWheel(float* pWheel) const
 {
-	return S_OK;
+    CInputRawInput::GetRawData(m_hDevice, std::span<ButtonState>(), nullptr, pWheel);
+    return S_OK;
 }
 
 //--------------------------
@@ -912,7 +1257,7 @@ BOOL CALLBACK CInputDirectInput::EnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, 
 //--------------------
 //初期化処理
 //--------------------
-HRESULT CInputDirectInputKeyboard::Init(HINSTANCE hInstanse, HWND hWnd)
+HRESULT CInputDirectInputKeyboard::Init(HINSTANCE hInstanse, HWND hWnd, Index8 idx)
 {
 	//インプットデバイスの作成 
 	if (FAILED(CInputDirectInput::GetDirectInput()->CreateDevice(GUID_SysKeyboard, &m_pDevice, nullptr))) return E_FAIL;
@@ -980,7 +1325,24 @@ HRESULT CInputDirectInputKeyboard::GetKey(std::span<input::ButtonState> keyState
 			{
                 keyState[cntKey].isDown = (state[cntKey] & 0x80) != 0;
 			}
-			return S_OK;
+
+            DIDEVICEOBJECTDATA events[DIRECT_BUFFER_SIZE];
+            DWORD numEvents = DIRECT_BUFFER_SIZE;
+            if (SUCCEEDED(m_pDevice->GetDeviceData(sizeof(DIDEVICEOBJECTDATA), events, &numEvents, 0)))
+            {
+                for (Index8 cntEvent = 0; cntEvent < numEvents; ++cntEvent)
+                {
+                    if (events[cntEvent].dwData & 0x80)
+                    {// 押された
+                        keyState[Index8(events[cntEvent].dwOfs)].isTrigger = true;
+                    }
+                    else
+                    {// 離された
+                        keyState[Index8(events[cntEvent].dwOfs)].isRelease = true;
+                    }
+                }
+                return S_OK;
+            }
 		}
 		else
 		{
@@ -1005,7 +1367,7 @@ HRESULT CInputDirectInputKeyboard::SetProperty(void)
 	dipdw.diph.dwObj = 0;
 
 	// 16個のイベントを格納できるバッファを作成
-	dipdw.dwData = 16;
+	dipdw.dwData = DIRECT_BUFFER_SIZE;
 	return m_pDevice->SetProperty(DIPROP_BUFFERSIZE, &dipdw.diph);
 }
 
@@ -1018,7 +1380,7 @@ HRESULT CInputDirectInputKeyboard::SetProperty(void)
 //--------------------
 //初期化処理
 //--------------------
-HRESULT CInputDirectInputMouse::Init(HINSTANCE hInstanse, HWND hWnd)
+HRESULT CInputDirectInputMouse::Init(HINSTANCE hInstanse, HWND hWnd, Index8 idx)
 {
 	//インプットデバイスの作成
 	if (FAILED(CInputDirectInput::GetDirectInput()->CreateDevice(GUID_SysMouse, &m_pDevice, nullptr)))return E_FAIL;
@@ -1086,7 +1448,28 @@ HRESULT CInputDirectInputMouse::GetButton(std::span<input::ButtonState> buttonSt
 			{
                 buttonState[cntButton].isDown = (state.rgbButtons[cntButton] & 0x80) != 0;
 			}
-			return S_OK;
+
+            DIDEVICEOBJECTDATA events[DIRECT_BUFFER_SIZE];
+            DWORD numEvents = DIRECT_BUFFER_SIZE;
+            if (SUCCEEDED(m_pDevice->GetDeviceData(sizeof(DIDEVICEOBJECTDATA), events, &numEvents, 0)))
+            {
+                for (Index8 cntEvent = 0; cntEvent < numEvents; ++cntEvent)
+                {
+                    if (events[cntEvent].dwOfs >= DIMOFS_BUTTON0 && events[cntEvent].dwOfs <= DIMOFS_BUTTON7)
+                    {// ボタンのイベント
+                        Index8 index = Index8(events[cntEvent].dwOfs - DIMOFS_BUTTON0);
+                        if (events[cntEvent].dwData & 0x80)
+                        {// 押された
+                            buttonState[index].isTrigger = true;
+                        }
+                        else
+                        {// 離された
+                            buttonState[index].isRelease = true;
+                        }
+                    }
+                }
+                return S_OK;
+            }
 		}
 		else
 		{
@@ -1154,7 +1537,7 @@ HRESULT CInputDirectInputMouse::SetProperty(void)
 	dipdw.diph.dwObj = 0;
 
 	// 16個のイベントを格納できるバッファを作成
-	dipdw.dwData = 16;
+	dipdw.dwData = DIRECT_BUFFER_SIZE;
 	return m_pDevice->SetProperty(DIPROP_BUFFERSIZE, &dipdw.diph);
 }
 
@@ -1206,19 +1589,19 @@ HRESULT CInputDirectInputController::Init(HINSTANCE hInstanse, HWND hWnd, Index8
     // コントローラーの種類を判別
     if (IsEqualGUID(m_guidProduct, ELECOM))
     {// ELECOM
-        m_type = DIRECTINPUT_CONTROLLER_TYPE::ELECOM;
+        m_pConMap = EleConMap;
     }
     else if (IsEqualGUID(m_guidProduct, PlayStation))
     {// PlayStation
-        m_type = DIRECTINPUT_CONTROLLER_TYPE::PlayStation;
+        m_pConMap = PsConMap;
     }
     else if (IsEqualGUID(m_guidProduct, Nintendo))
     {// Nintendo
-        m_type = DIRECTINPUT_CONTROLLER_TYPE::Nintendo;
+        m_pConMap = NinConMap;
     }
     else
     {// 不明
-        m_type = DIRECTINPUT_CONTROLLER_TYPE::Unknown;
+        m_pConMap = DConMap;
     }
 
 	return S_OK;
@@ -1251,12 +1634,35 @@ HRESULT CInputDirectInputController::GetButton(std::span<input::ButtonState> but
 		DIJOYSTATE  state;// 入力格納
 		if (SUCCEEDED(m_pDevice->GetDeviceState(sizeof(DIJOYSTATE), &state)))
 		{
-			for (Index cntButton = 0; cntButton < buttonState.size(); cntButton++)
-			{
-                buttonState[cntButton].isDown = (state.rgbButtons[0] & 0x80) != 0;
-			}
-			return S_OK;
-		}
+            for (Index8 cntButton = 0; cntButton < m_pConMap.size(); cntButton++)
+            {
+                CONTROLLER_BUTTON button = m_pConMap[cntButton];
+                buttonState[Index8(button)].isDown = (state.rgbButtons[cntButton] & 0x80) != 0;
+            }
+
+            DIDEVICEOBJECTDATA events[DIRECT_BUFFER_SIZE];
+            DWORD numEvents = DIRECT_BUFFER_SIZE;
+            if (SUCCEEDED(m_pDevice->GetDeviceData(sizeof(DIDEVICEOBJECTDATA), events, &numEvents, 0)))
+            {
+                for (Index8 cntEvent = 0; cntEvent < numEvents; ++cntEvent)
+                {
+                    if (events[cntEvent].dwOfs >= DIJOFS_BUTTON0 && events[cntEvent].dwOfs <= DIJOFS_BUTTON31)
+                    {// ボタンのイベント
+                        Index8 index = Index8(events[cntEvent].dwOfs - DIJOFS_BUTTON0);
+                        CONTROLLER_BUTTON button = m_pConMap[index];
+                        if (events[cntEvent].dwData & 0x80)
+                        {// 押された
+                            buttonState[Index8(button)].isTrigger = true;
+                        }
+                        else
+                        {// 離された
+                            buttonState[Index8(button)].isRelease = true;
+                        }
+                    }
+                }
+                return S_OK;
+            }
+        }
 		else
 		{
 			m_pDevice->Acquire();//アクセス権限の取得
@@ -1411,7 +1817,7 @@ HRESULT CInputDirectInputController::SetProperty(void)
 	dipdw.diph.dwObj = 0;
 
 	// 16個のイベントを格納できるバッファを作成
-	dipdw.dwData = 16;
+	dipdw.dwData = DIRECT_BUFFER_SIZE;
 	if (FAILED(m_pDevice->SetProperty(DIPROP_BUFFERSIZE, &dipdw.diph)))return E_FAIL;
 
 	// デッドゾーンを20%に設定

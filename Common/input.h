@@ -47,9 +47,12 @@ namespace input
     constexpr SHORT STICK_NUM = static_cast<SHORT>(32767);   // スティックの値
 
     // GUID
-    constexpr GUID ELECOM = GUID(0);
-    constexpr GUID PlayStation = GUID(0);
-    constexpr GUID Nintendo = GUID(0);
+    constexpr GUID ELECOM = { 0xBC8A8C70, 0x4A8F, 0x11EF, { 0x80, 0x01, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00 } };
+    constexpr GUID PlayStation = { 0xA8629E60, 0x7B79, 0x11F0, { 0x80, 0x01, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00 } };
+    constexpr GUID Nintendo = { 0x069B8EC0, 0x5FD7, 0x11EF, { 0x80, 0x01, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00 } };
+
+    // バッファリング
+    constexpr DWORD DIRECT_BUFFER_SIZE = 16;   // バッファサイズ
 
     // コントローラーの種類
     enum class DIRECTINPUT_CONTROLLER_TYPE : common::Index8
@@ -357,6 +360,17 @@ namespace input
             CONTROLLER_BUTTON::Right
     };
 
+    // デバイス情報
+    struct DeviceInfo
+    {
+        DWORD  dwType;
+        HANDLE hDevice;
+
+        DeviceInfo() : dwType{}, hDevice{} {}
+        DeviceInfo(DWORD type, HANDLE handle) : dwType{ type }, hDevice{ handle } {}
+        ~DeviceInfo() = default;
+    };
+
     // ボタンの状態
     struct ButtonState
     {
@@ -378,9 +392,21 @@ namespace input
         float Length(void) { return sqrtf(x * x + y * y); }
         void Length(float* pLength) { *pLength = sqrtf(x * x + y * y); }
 
-        Axis() : x{}, y{} {}
+        bool operator==(const Axis& other) const {
+            return x == other.x && y == other.y;
+        }
+
+        bool operator!=(const Axis& other) const {
+            return !(*this == other);
+        }
+
+        constexpr Axis() : x{}, y{} {}
+        constexpr Axis(float X, float Y) : x{ X }, y{ Y } {}
         ~Axis() = default;
+
+        static const Axis Null;
     };
+    inline constexpr Axis Axis::Null = Axis(0.0f, 0.0f);
 }
 
 // 管理
@@ -538,7 +564,7 @@ public:
     CInputKeyboard() : m_keyState{} {};
     virtual ~CInputKeyboard() = default;
 
-    virtual HRESULT Init(HINSTANCE hInstanse, HWND hWnd) = 0;
+    virtual HRESULT Init(HINSTANCE hInstanse, HWND hWnd, common::Index8 idx = common::INVALID_ID8) = 0;
     virtual void Uninit(void) = 0;
     void Update(void);
 
@@ -564,7 +590,7 @@ public:
     CInputMouse() : m_buttonState{}, m_Move{}, m_WheelMove{} {}
     virtual ~CInputMouse() = default;
 
-    virtual HRESULT Init(HINSTANCE hInstanse, HWND hWnd) = 0;
+    virtual HRESULT Init(HINSTANCE hInstanse, HWND hWnd, common::Index8 idx = common::INVALID_ID8) = 0;
     virtual void Uninit(void) = 0;
     void Update(void);
 
@@ -632,14 +658,27 @@ private:
 //-----------------------------
 class CInputRawInput
 {
-    // 公開
+// 公開
 public:
     CInputRawInput() = delete;
 
-    static HRESULT SetRawData(RAWINPUT rawData);
+    static HRESULT SetDevice(HWND hWnd, bool allDevice = false);
+    static HANDLE GetDeviceHandle(DWORD dwType, common::Index8 idx);
+    static HRESULT SetRawData(const RAWINPUT& rawData);
+    static void GetRawData(HANDLE hDevice, std::span<input::ButtonState> state, input::Axis* pAxis = nullptr, float* pWheel = nullptr);
 
-    // 非公開
+    static size_t Count(void) { return m_aDevice.size(); }
+
+// 非公開
 private:
+    static HRESULT RegisterStandardInputDevices(HWND hWnd);
+    static HRESULT RegisterAllInputDevices(HWND hWnd);
+
+    static std::vector<input::DeviceInfo> m_aDevice;                               // 登録デバイス
+    static std::unordered_map<HANDLE, std::vector<input::ButtonState>> m_state;    // デバイスの生データ保存用
+    static std::unordered_map<HANDLE, std::vector<input::ButtonState>> m_stateOld; // デバイスの生データ保存用(前回)
+    static std::unordered_map<HANDLE, input::Axis> m_move;                         // デバイスの移動量保存用
+    static std::unordered_map<HANDLE, float> m_wheel;                              // デバイスのホイール量保存用
 };
 
 //-----------------------------
@@ -647,19 +686,19 @@ private:
 //-----------------------------
 class CInputRawInputKeyboard : public CInputKeyboard
 {
-    // 公開
+// 公開
 public:
-    CInputRawInputKeyboard() : m_key{}, m_keyOld{} {}
+    CInputRawInputKeyboard() : m_hDevice{} {}
     ~CInputRawInputKeyboard() = default;
 
-    HRESULT Init(HINSTANCE hInstanse, HWND hWnd) override;
-    void Uninit(void) override;
+    HRESULT Init(HINSTANCE hInstanse, HWND hWnd, common::Index8 idx = common::INVALID_ID8) override;
+    void Uninit(void) override {};
     HRESULT GetKey(std::span<input::ButtonState> keyState) const override;
 
-    // 非公開
+
+// 非公開
 private:
-    std::array <bool, input::MAX_KEY> m_key;	// 今回のキー状態
-    std::array <bool, input::MAX_KEY> m_keyOld; // 前回のキー状態
+    HANDLE m_hDevice; // デバイスハンドル
 };
 
 //-----------------------------
@@ -669,19 +708,18 @@ class CInputRawInputMouse : public CInputMouse
 {
     // 公開
 public:
-    CInputRawInputMouse() : m_button{}, m_buttonOld{} {}
+    CInputRawInputMouse() : m_hDevice{} {}
     ~CInputRawInputMouse() = default;
 
-    HRESULT Init(HINSTANCE hInstanse, HWND hWnd) override;
-    void Uninit(void) override;
+    HRESULT Init(HINSTANCE hInstanse, HWND hWnd, common::Index8 idx = common::INVALID_ID8) override;
+    void Uninit(void) override {};
     HRESULT GetButton(std::span<input::ButtonState> buttonState) const override;
     HRESULT GetMove(input::Axis* pMove) const override;
     HRESULT GetWheel(float* pWheel) const override;
 
     // 非公開
 private:
-    std::array<bool, common::Index8(input::MOUSE_BUTTON::Max)> m_button;	// 今回のボタン状態
-    std::array<bool, common::Index8(input::MOUSE_BUTTON::Max)> m_buttonOld; // 前回のボタン状態
+    HANDLE m_hDevice; // デバイスハンドル
 };
 
 //-----------------------------
@@ -743,10 +781,10 @@ class CInputDirectInputKeyboard : public CInputKeyboard
 {
     // 公開
 public:
-    CInputDirectInputKeyboard() : m_pDevice{}, m_key{}, m_keyOld{} {}
+    CInputDirectInputKeyboard() : m_pDevice{} {}
     ~CInputDirectInputKeyboard() = default;
 
-    HRESULT Init(HINSTANCE hInstanse, HWND hWnd) override;
+    HRESULT Init(HINSTANCE hInstanse, HWND hWnd, common::Index8 idx = common::INVALID_ID8) override;
     void Uninit(void) override;
     HRESULT GetKey(std::span<input::ButtonState> keyState) const override;
 
@@ -755,9 +793,6 @@ private:
     HRESULT SetProperty(void);
 
     LPDIRECTINPUTDEVICE8 m_pDevice;        // インプットデバイス
-
-    std::array <bool, input::MAX_KEY> m_key;	// 今回のキー状態
-    std::array <bool, input::MAX_KEY> m_keyOld; // 前回のキー状態
 };
 
 //-----------------------------
@@ -767,10 +802,10 @@ class CInputDirectInputMouse : public CInputMouse
 {
     // 公開
 public:
-    CInputDirectInputMouse() : m_pDevice{}, m_button{}, m_buttonOld{} {}
+    CInputDirectInputMouse() : m_pDevice{} {}
     ~CInputDirectInputMouse() = default;
 
-    HRESULT Init(HINSTANCE hInstanse, HWND hWnd) override;
+    HRESULT Init(HINSTANCE hInstanse, HWND hWnd, common::Index8 idx = common::INVALID_ID8) override;
     void Uninit(void) override;
     HRESULT GetButton(std::span<input::ButtonState> buttonState) const override;
     HRESULT GetMove(input::Axis* pMove) const override;
@@ -781,9 +816,6 @@ private:
     HRESULT SetProperty(void);
 
     LPDIRECTINPUTDEVICE8 m_pDevice;        // インプットデバイス
-
-    std::array<bool, common::Index8(input::MOUSE_BUTTON::Max)> m_button;	// 今回のボタン状態
-    std::array<bool, common::Index8(input::MOUSE_BUTTON::Max)> m_buttonOld; // 前回のボタン状態
 };
 
 //-----------------------------
@@ -793,7 +825,7 @@ class CInputDirectInputController : public CInputController
 {
     // 公開
 public:
-    CInputDirectInputController() : m_pDevice{}, m_effect{}, m_guidProduct{}, m_type{}, m_bForceFeedback{}, m_effectGuid{}, m_button{}, m_buttonOld{} {}
+    CInputDirectInputController() : m_pDevice{}, m_effect{}, m_guidProduct{}, m_pConMap{}, m_bForceFeedback{}, m_effectGuid{} {}
     ~CInputDirectInputController() = default;
 
     HRESULT Init(HINSTANCE hInstanse, HWND hWnd, common::Index8 idx = common::INVALID_ID8) override;
@@ -813,14 +845,11 @@ private:
     static BOOL CALLBACK EnumEffectsCallback(LPCDIEFFECTINFO pdei, LPVOID pvRef);
     HRESULT SetProperty(void);
 
-    LPDIRECTINPUTDEVICE8 m_pDevice;     // インプットデバイス
-    GUID m_guidProduct;                 // プロダクトGUID
-    DIRECTINPUT_CONTROLLER_TYPE m_type; // コントローラータイプ
+    LPDIRECTINPUTDEVICE8 m_pDevice;                      // インプットデバイス
+    GUID m_guidProduct;                                  // プロダクトGUID
+    std::span<const input::CONTROLLER_BUTTON> m_pConMap; // コントローラーマッピング
 
     bool m_bForceFeedback;           // フォースフィードバック対応フラグ
     GUID m_effectGuid;               // 振動エフェクトGUID
     LPDIRECTINPUTEFFECT m_effect;    // 振動
-
-    std::array<bool, common::Index8(input::CONTROLLER_BUTTON::Max) > m_button;    // 今回のボタン状態
-    std::array<bool, common::Index8(input::CONTROLLER_BUTTON::Max)> m_buttonOld; // 前回のボタン状態
 };

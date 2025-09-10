@@ -54,10 +54,6 @@ public:
     void ToggleBorderless(void);
     bool IsFullScreen(void) { return m_isFullScreen; }
 
-    void RegisterStandardInputDevices(void);
-    void RegisterAllInputDevices(void);
-    void DebugPrintDeviceInfo(void);
-
     void Error(HRESULT hr, const std::source_location& location = std::source_location::current());
     void ConfineCursorToWindow(void);
     void ReleaseCursor(void);
